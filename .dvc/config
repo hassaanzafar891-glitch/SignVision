@@ -1,0 +1,3 @@
+[cache]
+    dir = E:\LinguaSign_DVC_Cache
+    type = copy
