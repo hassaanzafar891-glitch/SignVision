@@ -28,6 +28,13 @@ def predict(mode: int) -> str:
 
     filepath = os.path.join(settings.KEYPOINTS_DIR, filename)
 
+    return predict_file(filepath, mode)
+
+
+def predict_file(filepath: str, mode: int) -> str:
+    """Run existing preprocessing and models against an explicitly chosen frame."""
+    if mode not in (0, 1):
+        raise ValueError("Invalid recognition mode")
     try:
         js = json.loads(open(filepath).read())
         for items in js['people']:
@@ -35,7 +42,7 @@ def predict(mode: int) -> str:
             hl = items["hand_left_keypoints_2d"]
         r_conf = sum(hr[i] for i in range(2, len(hr), 3))
         l_conf = sum(hl[i] for i in range(2, len(hl), 3))
-        print(f"[predict] mode={mode} file={filename} R_conf={r_conf:.1f} L_conf={l_conf:.1f}")
+        print(f"[predict] mode={mode} file={filepath} R_conf={r_conf:.1f} L_conf={l_conf:.1f}")
 
         if mode == 0:
             result = alphabet.match_ann(filepath)

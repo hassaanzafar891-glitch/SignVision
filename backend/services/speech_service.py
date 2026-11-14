@@ -34,13 +34,8 @@ def _play_mp3(path: str):
 def preload(label: str):
     def _cache():
         try:
-            import asyncio, edge_tts
-            cached = _cache_path(label)
-            if not os.path.isfile(cached):
-                async def _generate():
-                    tts = edge_tts.Communicate(label, voice="ur-PK-UzmaNeural")
-                    await tts.save(cached)
-                asyncio.run(_generate())
+            import asyncio
+            asyncio.run(audio_path(label))
         except Exception as e:
             print(f"[speech] preload ERROR: {e}")
     threading.Thread(target=_cache, daemon=True).start()
@@ -50,14 +45,26 @@ def play(label: str, mode: str = "offline"):
     def _speak():
         try:
             import asyncio
-            import edge_tts
-            cached = _cache_path(label)
-            if not os.path.isfile(cached):
-                async def _generate():
-                    tts = edge_tts.Communicate(label, voice="ur-PK-UzmaNeural")
-                    await tts.save(cached)
-                asyncio.run(_generate())
+            cached = asyncio.run(audio_path(label))
             _play_mp3(cached)
         except Exception as e:
             print(f"[speech] ERROR: {e}")
     threading.Thread(target=_speak, daemon=False).start()
+
+
+async def audio_path(label: str) -> str:
+    """Generate audio for browser playback, without opening a server audio device."""
+    import edge_tts
+    import tempfile
+    cached = _cache_path(label)
+    if not os.path.isfile(cached):
+        # Publish only complete audio; concurrent requests use separate files.
+        handle, temporary = tempfile.mkstemp(suffix=".mp3", dir=_CACHE_DIR)
+        os.close(handle)
+        try:
+            await edge_tts.Communicate(label, voice="ur-PK-UzmaNeural").save(temporary)
+            os.replace(temporary, cached)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+    return cached

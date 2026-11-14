@@ -33,39 +33,138 @@ export default function SignPage() {
   const [sentence, setSentence] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [cameraError, setCameraError] = useState("");
+  const [starting, setStarting] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const sessionRef = useRef(0);
+  const startingRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastLetterRef = useRef("");
+  const modeRef = useRef(wordMode);
+  const speechRef = useRef(speech);
+  const modeVersionRef = useRef(0);
 
-  async function startDetection() {
-    await fetch(`${API}/start-capture`, { method: "POST" });
-    setDetecting(true);
+  function toggleWordMode() {
+    modeVersionRef.current += 1;
+    modeRef.current = !modeRef.current;
+    setWordMode(modeRef.current);
+    setCurrentLetter("");
+    lastLetterRef.current = "";
   }
 
-  useEffect(() => {
-    if (!detecting) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
+  function toggleSpeech() {
+    speechRef.current = !speechRef.current;
+    setSpeech(speechRef.current);
+    if (!speechRef.current) audioRef.current?.pause();
+  }
+
+  async function startDetection() {
+    if (startingRef.current || streamRef.current) return;
+    startingRef.current = true;
+    setStarting(true);
+    setCameraError("");
+    const session = ++sessionRef.current;
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera access requires localhost or HTTPS and a supported browser.");
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, audio: false,
+      });
+      if (session !== sessionRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      streamRef.current = stream;
+      stream.getVideoTracks().forEach(track => {
+        track.onended = () => {
+          handleStop();
+          setCameraError("Camera disconnected. Start detection to reconnect.");
+        };
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      if (session === sessionRef.current) setDetecting(true);
+    } catch (error) {
+      if (session === sessionRef.current) {
+        streamRef.current?.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+        setCameraError(error instanceof Error ? error.message : "Unable to access camera.");
+      }
+    } finally {
+      startingRef.current = false;
+      setStarting(false);
     }
-    intervalRef.current = setInterval(async () => {
+  }
+
+  useEffect(() => () => {
+    sessionRef.current += 1;
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+    audioRef.current?.pause();
+  }, []);
+
+  useEffect(() => {
+    if (!detecting) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    const canvas = document.createElement("canvas");
+    async function sendFrame() {
+      const video = videoRef.current;
+      const session = sessionRef.current;
+      const mode = modeRef.current;
+      const modeVersion = modeVersionRef.current;
       try {
-        const res = await fetch(`${API}/match`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: wordMode ? 1 : 0, speech: speech ? 1 : 0, voice_mode: "edge" }),
+        if (!video || video.readyState < 2) return;
+        const scale = Math.min(1, 640 / video.videoWidth, 480 / video.videoHeight);
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        // Send unmirrored pixels, matching the legacy OpenCV camera input.
+        canvas.getContext("2d")!.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
+        if (!blob || cancelled) return;
+        const body = new FormData();
+        body.append("frame", blob, "frame.jpg");
+        const res = await fetch(`${API}/predict-frame?mode=${mode ? 1 : 0}`, {
+          method: "POST", body, signal: controller.signal,
         });
+        if (res.status === 429) return;
+        if (!res.ok) throw new Error(`Frame recognition failed (${res.status})`);
         const data = await res.json();
-        if (data.label !== "no match" && data.label !== "no confidence") {
-          const letter = data.label;
-          if (letter !== lastLetterRef.current) {
-            lastLetterRef.current = letter;
-            setCurrentLetter(letter);
-            preload(letter);
-          }
+        if (cancelled || session !== sessionRef.current || modeVersion !== modeVersionRef.current) return;
+        if (typeof data.label !== "string") throw new Error("Invalid prediction response");
+        setCameraError("");
+        if (["no match", "no confidence"].includes(data.label)) {
+          setCurrentLetter("");
+          lastLetterRef.current = "";
+        } else if (data.label !== lastLetterRef.current) {
+          lastLetterRef.current = data.label;
+          setCurrentLetter(data.label);
+          preload(data.label);
+          if (speechRef.current) void speakWord(data.label);
         }
-      } catch { /* backend unreachable */ }
-    }, cooldown);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [detecting, wordMode, speech, cooldown]);
+      } catch (error) {
+        if (!cancelled) {
+          setCurrentLetter("");
+          lastLetterRef.current = "";
+          setCameraError(error instanceof Error ? error.message : "Frame recognition unavailable.");
+        }
+      } finally {
+        // Await encoding and the response before scheduling another request.
+        if (!cancelled) timer = setTimeout(sendFrame, cooldown);
+      }
+    }
+    void sendFrame();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [detecting, cooldown]);
 
   function acceptLetter() {
     if (!currentLetter) return;
@@ -81,7 +180,14 @@ export default function SignPage() {
 
   async function speakWord(word: string) {
     if (!word) return;
-    await fetch(`${API}/speech/${encodeURIComponent(word)}`, { method: "POST" }).catch(() => {});
+    audioRef.current?.pause();
+    const audio = new Audio(`${API}/speech-audio/${encodeURIComponent(word)}`);
+    audioRef.current = audio;
+    try {
+      await audio.play();
+    } catch {
+      setCameraError("Speech could not play. Check your connection and browser audio permissions.");
+    }
   }
 
   async function speakSentence(words: string[]) {
@@ -122,11 +228,15 @@ export default function SignPage() {
     });
   }
 
-  async function handleStop() {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+  function handleStop() {
+    sessionRef.current += 1;
+    streamRef.current?.getTracks().forEach(track => { track.onended = null; track.stop(); });
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    audioRef.current?.pause();
     setDetecting(false);
     setCurrentLetter("");
-    await fetch(`${API}/stop-capture`, { method: "POST" }).catch(() => {});
+    lastLetterRef.current = "";
   }
 
   return (
@@ -174,11 +284,11 @@ export default function SignPage() {
           <div className="card" style={{ padding: '4px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 0', borderBottom: '1px solid var(--line)' }}>
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--ink)' }}>Enable Speech</span>
-              <Toggle on={speech} onClick={() => setSpeech(s => !s)} />
+              <Toggle on={speech} onClick={toggleSpeech} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 0' }}>
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--ink)' }}>Word Mode</span>
-              <Toggle on={wordMode} onClick={() => setWordMode(m => !m)} />
+              <Toggle on={wordMode} onClick={toggleWordMode} />
             </div>
           </div>
 
@@ -260,10 +370,9 @@ export default function SignPage() {
 
           {/* Feed box */}
           <div className="psl-sign-cambox" style={{ width: '100%', maxWidth: 720, aspectRatio: '4/3', borderRadius: 20, border: '1px solid var(--line)', background: 'var(--surface)', overflow: 'hidden', position: 'relative' }}>
-            {detecting ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={`${API_BASE}/api/stream`} alt="Live feed" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            ) : (
+            <video ref={videoRef} autoPlay playsInline muted aria-label="Live webcam"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: detecting ? 'block' : 'none', transform: 'scaleX(-1)' }} />
+            {!detecting && (
               <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: 'var(--ink-faint)' }}>
                 <I.Camera size={56} sw={1.2} />
                 <span style={{ fontSize: 15, fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--ink-soft)' }}>Camera inactive</span>
@@ -283,14 +392,14 @@ export default function SignPage() {
               background: detecting ? 'linear-gradient(rgba(0,0,0,0.5), transparent)' : 'transparent',
               pointerEvents: 'auto',
             }}>
-              <button onClick={() => setSpeech(s => !s)} style={{
+              <button onClick={toggleSpeech} style={{
                 background: detecting ? (speech ? '#fff' : 'rgba(0,0,0,0.5)') : (speech ? 'var(--primary)' : 'var(--surface)'),
                 border: detecting ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--line)',
                 borderRadius: 20, padding: '6px 14px',
                 color: detecting ? (speech ? '#000' : 'rgba(255,255,255,0.85)') : (speech ? 'var(--on-primary)' : 'var(--ink-soft)'),
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', boxShadow: detecting ? 'none' : 'var(--shadow-sm)',
               }}>Speech {speech ? 'ON' : 'OFF'}</button>
-              <button onClick={() => setWordMode(m => !m)} style={{
+              <button onClick={toggleWordMode} style={{
                 background: detecting ? (wordMode ? '#fff' : 'rgba(0,0,0,0.5)') : (wordMode ? 'var(--primary)' : 'var(--surface)'),
                 border: detecting ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--line)',
                 borderRadius: 20, padding: '6px 14px',
@@ -391,7 +500,7 @@ export default function SignPage() {
 
               {/* Start/Stop */}
               {!detecting ? (
-                <button onClick={startDetection} style={{
+                <button onClick={startDetection} disabled={starting} style={{
                   width: 76, height: 76, borderRadius: '50%', flexShrink: 0,
                   background: 'var(--primary)', border: '4px solid var(--green-soft)',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -436,10 +545,11 @@ export default function SignPage() {
           </div>
           {/* ── END MOBILE OVERLAY ── */}
 
+          {cameraError && <p role="alert" style={{ color: 'var(--ink)', zIndex: 11 }}>{cameraError}</p>}
           {/* Desktop start/stop button */}
           <div style={{ width: '100%', maxWidth: 720 }}>
             {!detecting ? (
-              <button className="btn btn-primary" onClick={startDetection}
+              <button className="btn btn-primary" onClick={startDetection} disabled={starting}
                 style={{ width: '100%', height: 52, fontSize: 16, gap: 10 }}>
                 <I.Camera size={20} /> Start Detection
               </button>

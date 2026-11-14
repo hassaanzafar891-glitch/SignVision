@@ -1,7 +1,8 @@
 
 import os
 from datetime import datetime
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from models.schemas import StatusResponse
 from services import speech_service
@@ -33,3 +34,14 @@ def log_missing_word(body: MissingWordRequest):
     with open(_LOG_PATH, "a", encoding="utf-8") as f:
         f.write(f"[{timestamp}] missing audio: {body.word}\n")
     return {"status": "logged"}
+
+
+@router.get("/speech-audio/{label}")
+async def speech_audio(label: str):
+    if not label.strip() or len(label) > 500:
+        raise HTTPException(status_code=400, detail="Text must contain 1 to 500 characters")
+    try:
+        path = await speech_service.audio_path(label)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Speech generation unavailable") from exc
+    return FileResponse(path, media_type="audio/mpeg")

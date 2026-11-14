@@ -56,3 +56,8 @@ error.log
 *.log
 .DS_Store
 Thumbs.db
+
+# Optional MLflow tracking environment and local run store
+.venv-tracking/
+backend/mlruns/
+backend/data/training_runs/

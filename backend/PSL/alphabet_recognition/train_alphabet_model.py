@@ -16,6 +16,11 @@ from matplotlib import pyplot as plt
 from tensorflow.keras.callbacks import Callback
 
 
+from tracking.training import BACKEND, TrainingRun
+
+DATASET_PATH = BACKEND / "data" / "db" / "main_dataset.db"
+
+
 class EpochBar(Callback):
     def on_train_begin(self, logs=None):
         self.epochs = self.params['epochs']
@@ -36,7 +41,12 @@ class EpochBar(Callback):
 
 
 def train_alphabets():
-    connection = sqlite3.connect("data\\db\\main_dataset.db")
+    with TrainingRun("alphabet", __file__) as run:
+        return _train_alphabets(run)
+
+
+def _train_alphabets(run):
+    connection = sqlite3.connect(DATASET_PATH.as_uri() + "?mode=ro", uri=True)
     crsr = connection.cursor()
 
     sql = 'SELECT x1,y1'
@@ -56,6 +66,8 @@ def train_alphabets():
     for x in label_res:
         labels.append(x)
 
+    connection.close()
+
     le = preprocessing.LabelEncoder()
     label_encoded=le.fit_transform(labels)
 
@@ -64,11 +76,16 @@ def train_alphabets():
 
     X_train, X_test, y_train, y_test = train_test_split(features, label_encoded, test_size=0.2)
 
+    run.record_dataset(features, labels, DATASET_PATH, "alphabetDataset",
+                       train_samples=len(X_train), test_samples=len(X_test))
+
     scaler = StandardScaler().fit(X_train)
     X_train = scaler.transform(X_train)
     X_test = scaler.transform(X_test)
-    pickle.dump(scaler, open("data\\models\\alphabet_scaler.pkl", "wb"))
-    pickle.dump(le, open("data\\models\\alphabet_label_encoder.pkl", "wb"))
+    with (run.output_dir / "alphabet_scaler.pkl").open("wb") as stream:
+        pickle.dump(scaler, stream)
+    with (run.output_dir / "alphabet_label_encoder.pkl").open("wb") as stream:
+        pickle.dump(le, stream)
 
     model = Sequential()
 
@@ -82,14 +99,20 @@ def train_alphabets():
                   optimizer='adam',
                   metrics=['accuracy'])
 
+    run.record_model(model, epochs=25, batch_size=1, split={
+        "test_size": 0.2, "validation_split": 0.2,
+        "split_random_state": "not specified", "stratified": False,
+    })
+
     history = model.fit(X_train, y_train, validation_split=0.20,
                         epochs=25, batch_size=1, verbose=0,
-                        callbacks=[EpochBar()])
+                        callbacks=[EpochBar(), run.callback(Callback)])
 
-    model.save("data\\models\\alphabet_model.h5")
+    model.save(run.output_dir / "alphabet_model.h5")
 
     y_pred = model.predict(X_test)
     score = model.evaluate(X_test, y_test,verbose=1)
+    run.record_test(loss=score[0], accuracy=score[1])
 
     print("\n%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 
@@ -147,9 +170,9 @@ def train_alphabets():
     plt.figure(figsize=(40, 40))
     plot_confusion_matrix(cm, classes=class_names, normalize=True,
                           title='Normalized confusion matrix')
-    plt.savefig("data\\models\\confusion_matrix.png", dpi=150, bbox_inches='tight')
+    plt.savefig(run.output_dir / "confusion_matrix.png", dpi=150, bbox_inches='tight')
     plt.show()
-    print("Confusion matrix saved to data\\models\\confusion_matrix.png")
+    print(f"Confusion matrix saved to {run.output_dir / 'confusion_matrix.png'}")
 
 
 if __name__ == "__main__":

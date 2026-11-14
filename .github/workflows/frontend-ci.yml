@@ -1,28 +1,65 @@
-name: Frontend CI
+name: SignVision CI
 
-on:
+"on":
   push:
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-ci.yml"
-  pull_request:
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-ci.yml"
+    branches:
+      - main
+      - "feature/**"
+  pull_request: {}
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  backend:
+    name: Backend checks (Python 3.10)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONUTF8: "1"
+      SIGNVISION_TRACKING_ENABLED: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      # Dependency-isolated tests need only the standard library. The separate
+      # smoke_browser_camera.py integration script is not matched by test_*.py.
+      - name: Run backend unit tests
+        run: python -m unittest discover -s backend/tests -p "test_*.py" -v
+      - name: Check backend Python syntax
+        run: python -m compileall -q backend
+
+  frontend:
+    name: Frontend checks (Node.js 22)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
-          node-version: "20"
+          persist-credentials: false
+      - name: Set up Node.js and npm cache
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+      - name: Install locked frontend dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+      - name: Check TypeScript
+        run: npx tsc --noEmit

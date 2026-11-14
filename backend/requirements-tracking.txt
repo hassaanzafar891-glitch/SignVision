@@ -1,0 +1,3 @@
+# Optional, standalone tracking environment. No TensorFlow or inference imports.
+# Full MLflow provides the local tracking store and UI as well as remote tracking.
+mlflow==2.22.2
