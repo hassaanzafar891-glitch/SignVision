@@ -1,6 +1,8 @@
-# LinguaSign — Pakistan Sign Language Detection System
+# SignVision - Pakistan Sign Language Detection System
 
-[![Frontend CI](https://github.com/waqaswajla/pakistan-sign-language-detection-system/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/waqaswajla/pakistan-sign-language-detection-system/actions/workflows/frontend-ci.yml)
+MLOps course project based on the LinguaSign application. Original attribution is retained below.
+
+[![SignVision CI](https://github.com/hassaanzafar891-glitch/SignVision/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/hassaanzafar891-glitch/SignVision/actions/workflows/frontend-ci.yml)
 
 A real-time Pakistani Sign Language (PSL) recognition system that translates hand gestures into Urdu text and speech, with a full learning platform built on top.
 
@@ -22,14 +24,13 @@ The landing page introduces LinguaSign to new visitors with a bold hero section 
 
 ![Sign Detector](frontend/public/images/screenshots/sign.png)
 
-The Sign Detector is the core feature of LinguaSign. Upon starting a session, the system opens the user's webcam via the FastAPI backend and begins streaming a live MJPEG feed. A MediaPipe-powered model analyses each frame in real time, extracting 63 hand keypoints (21 landmarks × XYZ coordinates) and passing them through a trained dense neural network to classify the current PSL hand sign. The detected letter is displayed immediately in the **Detected Letter** panel. Users can then:
+The Sign Detector uses the browser's `getUserMedia()` webcam access. The browser sends JPEG frames to FastAPI at `/api/predict-frame`; MediaPipe extracts landmarks and the existing alphabet or word model returns a prediction. The backend does not need direct access to the host webcam. Users can:
 
-- **Accept a letter** to append it to the active word being composed
-- **Add a word to the sentence** once the full word is spelled out
-- **Speak the sentence** to trigger pre-recorded Urdu audio playback for each word
-- **Remove individual words** by clicking them in the sentence panel
+- **Accept a letter** to append it to the current word
+- **Add a word to the sentence** and remove individual words
+- **Speak the sentence** using Urdu Edge TTS audio played by the browser
 - Switch to **Word Mode** for direct whole-word detection
-- Adjust the **Detection Speed** slider (300 ms – 3 s cooldown) to balance responsiveness against false positives
+- Start and stop the camera; frame requests are sent sequentially
 
 The layout is split into a control panel on the left and the live camera feed on the right, keeping detection context and controls in the same view without context switching.
 
@@ -56,9 +57,9 @@ A searchable reference covering all 37 alphabet signs and the 5 supported words,
 ### Detection
 - **Real-time recognition** — detects 37 PSL alphabet letters and 5 common words via webcam
 - **Sentence builder** — accept letters → build words → compose full sentences
-- **Urdu speech output** — plays pre-recorded Urdu audio for detected signs
+- **Urdu speech output** - Urdu Edge TTS audio played in the browser (internet required)
 - **Word mode** — switch between letter-by-letter and full-word detection
-- **Adjustable speed** — tune detection cooldown from 300 ms to 3 seconds
+- **Browser camera** - captures JPEGs without a backend webcam device
 
 ### Learning Platform
 - **Google sign-in** — account creation and login via NextAuth, backed by a local SQLite user store
@@ -82,44 +83,35 @@ A searchable reference covering all 37 alphabet signs and the 5 supported words,
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 15 (App Router), TypeScript |
+| Frontend | Next.js 16.2.4 (App Router), TypeScript |
 | Styling | Custom CSS design system (`globals.css`) |
-| Backend | FastAPI, Python 3.9+ |
+| Backend | FastAPI, Python 3.10 for the pinned ML stack |
 | ML / CV | MediaPipe, TensorFlow / Keras, scikit-learn, OpenCV |
-| Speech | Pre-recorded Urdu MP3 audio + Web Speech API fallback |
+| Speech | Urdu Edge TTS audio with browser playback |
 
 ---
 
 ## Project Structure
 
-```
-├── backend/
-│   ├── main.py                        # FastAPI entry point
-│   ├── routers/                       # API route handlers (capture, recognition)
-│   ├── services/                      # Detection, capture, speech logic
-│   ├── core/                          # Config & shared dependencies
-│   ├── PSL/word_recognition/          # Word-level model helpers
-│   ├── data/
-│   │   ├── models/                    # Trained ML models (.h5, .pkl, scaler)
-│   │   └── speech/                    # Urdu audio files (.mp3)
-│   ├── Keypoints/                     # Captured keypoint JSON files
-│   └── requirements.txt
-│
-└── frontend/
-    └── app/
-        ├── page.tsx                   # Landing / home page
-        ├── layout.tsx                 # Root layout with sidebar shell
-        ├── globals.css                # Full design system
-        ├── sign/page.tsx              # Live detection page
-        ├── dashboard/page.tsx         # Progress dashboard
-        ├── learn/page.tsx             # Alphabet + quiz learning page
-        ├── live-learn/page.tsx        # Webcam practice with letter panel
-        ├── live-quiz/page.tsx         # Timed webcam quiz
-        ├── dictionary/page.tsx        # PSL reference dictionary
-        ├── lib/history.ts             # localStorage activity & streak logic
-        └── components/ls/
-            ├── Components.tsx         # AppShell, Sidebar, TopBar, shared UI
-            └── Icons.tsx              # Icon library
+```text
+backend/
+  main.py                         # FastAPI application
+  routers/browser_camera.py       # Browser JPEG inference endpoint
+  services/                       # Recognition and speech services
+  PSL/alphabet_recognition/       # Alphabet inference and training
+  PSL/word_recognition/           # Word inference and training
+  tracking/data_splits.py         # Duplicate-disjoint three-way split
+  tracking/training.py            # Optional MLflow tracking
+  data/db/main_dataset.db.dvc     # DVC pointer to the training database
+  data/models/                   # Existing production .h5 and .pkl files
+  data/training_runs/            # New, isolated training outputs (ignored)
+  mlruns/                       # Older local file-store experiments (ignored)
+  mlflow.db                     # Existing local SQL experiment store (ignored)
+  mlartifacts/                  # Existing local experiment artifacts (ignored)
+  requirements.txt
+  requirements-tracking.txt
+frontend/app/                    # Next.js pages, UI and API integrations
+.github/workflows/frontend-ci.yml # Lightweight backend/frontend CI
 ```
 
 ---
@@ -130,73 +122,58 @@ A searchable reference covering all 37 alphabet signs and the 5 supported words,
 
 ### Prerequisites
 
-- Python 3.9–3.11 (TensorFlow/MediaPipe don't yet support 3.12+)
-- Node.js 18+
-- A webcam
+- Python **3.10** for the pinned TensorFlow/MediaPipe training and inference environment (the local executable is `E:\Python310\python.exe`; adjust this path if installed elsewhere)
+- Node.js **22**, Git, and a webcam
+- DVC with HTTP support for retrieving training data; MLflow is optional for inference
 
-### 1. Clone the repository
+For a fresh checkout in PowerShell (skip cloning if `E:\LinguaSign` already exists):
 
-```bash
-git clone https://github.com/waqaswajla/pakistan-sign-language-detection-system.git
-cd pakistan-sign-language-detection-system
+```powershell
+Set-Location E:\
+git clone https://github.com/hassaanzafar891-glitch/SignVision.git LinguaSign
+Set-Location E:\LinguaSign
+& "E:\Python310\python.exe" -m venv .venv-backend
+& .\.venv-backend\Scripts\python.exe -m pip install --timeout 1000 --retries 10 -r backend/requirements.txt
 ```
 
-### 2. Set up the backend
+Start the backend in one PowerShell terminal:
 
-```bash
-cd backend
+```powershell
+Set-Location E:\LinguaSign\backend
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+& ..\.venv-backend\Scripts\python.exe -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Create and activate a virtual environment:
+Start the frontend in a second terminal:
 
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# macOS / Linux
-python -m venv venv
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Copy `.env.example` to `.env` in the `backend/` folder (defaults work as-is for local development; only fill in `SMTP_PASS` if you want the contact/feedback forms to actually send email — see comments in the file for how to get a Gmail App Password):
-
-```bash
-cp .env.example .env
-```
-
-Start the backend:
-
-```bash
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-
-### 3. Set up the frontend
-
-```bash
-cd frontend
-npm install
-```
-
-Copy `.env.example` to `.env.local` (defaults work for local development; `AUTH_*` and `STRIPE_SECRET_KEY` are only needed if you want Google sign-in and donations to work):
-
-```bash
-cp .env.example .env.local
-```
-
-```bash
+```powershell
+Set-Location E:\LinguaSign\frontend
+npm ci
+if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm run dev
 ```
 
-### 4. Open the app
+Open [http://localhost:3000/sign](http://localhost:3000/sign) and allow camera access. Google sign-in, Stripe and SMTP need their own optional settings from the environment examples. The two application terminals must remain running.
 
-Visit [http://localhost:3000](http://localhost:3000)
+Existing models under `backend/data/models/` are used for **inference**. Running the app does not retrain them and does not require MLflow. For DVC retrieval, optional training, tracking and result viewing, follow the PowerShell sequence in [HOW_TO_RUN.md](HOW_TO_RUN.md).
+
+### MLOps workflow
+
+The DagsHub project is [hassaanzafar891-glitch/SignVision](https://dagshub.com/hassaanzafar891-glitch/SignVision). DVC remote `origin` points to its `.dvc` endpoint; MLflow uses the separate `.mlflow` endpoint.
+
+After setting up the training environment and retrieving DVC data as described in the run guide, these **optional training commands** run from the repository root:
+
+```powershell
+Set-Location E:\LinguaSign
+$env:PYTHONPATH = (Join-Path (Get-Location).Path "backend")
+$env:SIGNVISION_TRACKING_ENABLED = "false"
+& .\.venv-backend\Scripts\python.exe -m PSL.alphabet_recognition.train_alphabet_model
+& .\.venv-backend\Scripts\python.exe -m PSL.word_recognition.train_word_model
+```
+
+For tracked training, install the separate `backend/requirements-tracking.txt` into the training environment, start the MLflow server from the run guide, and set `SIGNVISION_TRACKING_ENABLED=true` and `MLFLOW_TRACKING_URI=http://127.0.0.1:5000`. Tracking is disabled by default. `PYTHONPATH` makes `tracking` and `PSL` importable when launching modules from the repository root.
+
+New training runs write their `.h5`, scaler, label encoder and metadata to `backend/data/training_runs/<model>/<timestamp>-<UUID>/`. They do **not** overwrite the existing production artifacts. Repeating training is optional and does not guarantee bit-for-bit identical weights.
 
 ---
 
@@ -209,7 +186,7 @@ Visit [http://localhost:3000](http://localhost:3000)
 5. Click **Accept Letter** to add it to your current word
 6. Click **Add Word to Sentence** when a word is complete
 7. Use **Speak Sentence** to hear the output in Urdu
-8. Adjust the **Detection Speed** slider as needed
+8. Click **Stop Detection** when finished to release the camera
 
 To learn PSL signs, visit the **Learn** page — hover any letter card to see its hand sign image, or take the quick quiz on common words.
 
@@ -218,7 +195,7 @@ To learn PSL signs, visit the **Learn** page — hover any letter card to see it
 - Use good lighting for best accuracy
 - Keep your hand centered in the camera frame
 - Enable **Word Mode** to detect full words directly
-- Toggle **Enable Speech** to automatically speak each word as it's added
+- Toggle **Enable Speech** to speak new live predictions
 
 ---
 
@@ -226,11 +203,12 @@ To learn PSL signs, visit the **Learn** page — hover any letter card to see it
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/start-capture` | Open webcam and begin frame capture |
+| `POST` | `/api/start-capture` | Legacy server-camera capture; not used by the browser sign page |
 | `POST` | `/api/stop-capture` | Release webcam |
 | `POST` | `/api/match` | Run detection on current frame, return label |
 | `GET` | `/api/stream` | MJPEG live video stream |
-| `GET` | `/audio/{word}.mp3` | Serve Urdu audio for a detected sign |
+| `POST` | `/api/predict-frame?mode=0` | Infer an uploaded JPEG; mode 0 = alphabet, 1 = word |
+| `GET` | `/api/speech-audio/{label}` | Generate/serve Urdu speech for browser playback |
 
 ---
 
@@ -253,7 +231,7 @@ MediaPipe Holistic extracts 21 hand landmarks per frame, each carrying `[x, y, c
 | Dense (output) | 37 | Softmax |
 
 - Optimizer: Adam · Loss: Categorical cross-entropy
-- Train/test split: 80 / 20 · Epochs: 25 · Batch size: 1
+- Train/validation/test targets: approximately 60 / 20 / 20; epochs: 25; batch size: 1
 
 ### Word model — 5 classes
 
@@ -267,13 +245,28 @@ MediaPipe Holistic extracts 21 hand landmarks per frame, each carrying `[x, y, c
 | Dense (output) | 5 | Softmax |
 
 - Optimizer: Adam · Loss: Categorical cross-entropy
-- Train/test split: 80 / 20 · Epochs: 50 · Batch size: 32
+- Train/validation/test targets: approximately 60 / 20 / 20; epochs: 50; batch size: 32
 
 ### Training data
 
 Custom-collected PSL keypoint dataset captured via MediaPipe, stored in SQLite. Alphabet dataset uses `alphabetDataset` table; word dataset uses `wordDataset`. Confusion-matrix analysis was used iteratively to identify and correct misclassified letter pairs.
 
-The extracted keypoint dataset (`main_dataset.db`) and trained models are included in this repo so the app runs out of the box. The raw source images/video frames used to build that dataset are kept private (they contain identifiable photos of the people who volunteered for data collection) and are not published here. Reach out below if you need access for research or evaluation purposes.
+The extracted keypoint dataset is versioned by DVC at `backend/data/db/main_dataset.db`; Git stores its `.dvc` pointer. Retrieve the data before training. Existing production models remain in Git. Raw source images/video frames are private and are not included.
+
+### Splitting and evaluation
+
+Both trainers call `split_three_way()` from `backend/tracking/data_splits.py`. It uses deterministic group shuffles with base seed 42 and keeps identical 42-feature vectors in the same partition. The targets are approximately **60% training, 20% validation and 20% testing**; row counts can vary because splitting operates on duplicate groups. Every accepted partition contains every class. The scaler is fitted only on training data, validation data is used during fitting, and final evaluation uses the separate test data.
+
+This is **not signer-independent evaluation**: signer IDs are unavailable. Different feature vectors from the same person or closely related examples can still appear in different partitions. Reproducible splitting requires unchanged input rows and ordering; it does not guarantee deterministic neural-network training.
+
+Recorded results from the existing local `SignVision Training` MLflow experiment:
+
+| Model | Test accuracy | Test examples |
+| --- | --- | --- |
+| Alphabet | **98.37%** | 3,075 |
+| Word | **100% on a small test dataset** | 104 |
+
+These are observed experiment results, not guaranteed accuracy on unseen signers or real-world webcam input. No training was repeated to update this documentation. See [HOW_TO_RUN.md](HOW_TO_RUN.md) for viewing the existing SQL-backed experiment and for creating new runs without changing production models.
 
 ---
 
@@ -286,6 +279,10 @@ The extracted keypoint dataset (`main_dataset.db`) and trained models are includ
 ---
 
 ## Project Docs
+
+- [HOW_TO_RUN.md](HOW_TO_RUN.md) - PowerShell application, DVC, training and MLflow instructions
+- [docs/CI.md](docs/CI.md) - GitHub Actions checks and limitations
+- [docs/BROWSER_CAMERA_DOCKER.md](docs/BROWSER_CAMERA_DOCKER.md) - browser camera and Docker notes
 
 - [`docs/final-presentation.pptx`](docs/final-presentation.pptx) — final FYP defense presentation
 - [`docs/fyp-logics.docx`](docs/fyp-logics.docx) — design/logic notes written during development
