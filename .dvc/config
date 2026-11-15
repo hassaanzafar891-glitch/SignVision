@@ -1,3 +1,6 @@
 [cache]
-    dir = E:\LinguaSign_DVC_Cache
     type = copy
+[core]
+    remote = origin
+['remote "origin"']
+    url = https://dagshub.com/hassaanzafar891-glitch/SignVision.dvc

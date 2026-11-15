@@ -61,3 +61,8 @@ Thumbs.db
 .venv-tracking/
 backend/mlruns/
 backend/data/training_runs/
+
+# Local backend environment and MLflow files
+.venv-backend/
+backend/mlartifacts/
+backend/mlflow.db

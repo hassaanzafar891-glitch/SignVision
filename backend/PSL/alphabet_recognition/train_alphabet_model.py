@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
+from tracking.data_splits import split_three_way
 from sklearn.preprocessing import StandardScaler
 
 from tensorflow.keras.models import Sequential
@@ -74,13 +74,17 @@ def _train_alphabets(run):
     num_classes = len(set(le.classes_))
     label_encoded = to_categorical(label_encoded, num_classes=num_classes)
 
-    X_train, X_test, y_train, y_test = train_test_split(features, label_encoded, test_size=0.2)
+    train_idx, val_idx, test_idx = split_three_way(features, np.asarray(labels).reshape(-1))
+    X = np.asarray(features, dtype=np.float64)
+    X_train, X_val, X_test = X[train_idx], X[val_idx], X[test_idx]
+    y_train, y_val, y_test = label_encoded[train_idx], label_encoded[val_idx], label_encoded[test_idx]
 
     run.record_dataset(features, labels, DATASET_PATH, "alphabetDataset",
                        train_samples=len(X_train), test_samples=len(X_test))
 
     scaler = StandardScaler().fit(X_train)
     X_train = scaler.transform(X_train)
+    X_val = scaler.transform(X_val)
     X_test = scaler.transform(X_test)
     with (run.output_dir / "alphabet_scaler.pkl").open("wb") as stream:
         pickle.dump(scaler, stream)
@@ -100,11 +104,11 @@ def _train_alphabets(run):
                   metrics=['accuracy'])
 
     run.record_model(model, epochs=25, batch_size=1, split={
-        "test_size": 0.2, "validation_split": 0.2,
-        "split_random_state": "not specified", "stratified": False,
+        "test_size": 0.2, "validation_size": 0.2,
+        "split_random_state": 42, "duplicate_disjoint": True,
     })
 
-    history = model.fit(X_train, y_train, validation_split=0.20,
+    history = model.fit(X_train, y_train, validation_data=(X_val, y_val),
                         epochs=25, batch_size=1, verbose=0,
                         callbacks=[EpochBar(), run.callback(Callback)])
 
@@ -122,14 +126,14 @@ def _train_alphabets(run):
     plt.title('Accuracy vs Epoch')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
+    plt.legend(['train', 'validation'], loc='upper left')
     plt.show()
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
     plt.title('model loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
+    plt.legend(['train', 'validation'], loc='upper left')
     plt.show()
 
     print(model.summary())

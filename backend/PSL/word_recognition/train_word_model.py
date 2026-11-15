@@ -13,7 +13,7 @@ import pickle
 import numpy as np
 
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
+from tracking.data_splits import split_three_way
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
@@ -55,15 +55,17 @@ def _train_words(run):
 
     label_cat = to_categorical(label_encoded, num_classes=num_classes)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        features, label_cat, test_size=0.2, random_state=42, stratify=label_encoded
-    )
+    train_idx, val_idx, test_idx = split_three_way(features, labels)
+    X = np.asarray(features, dtype=np.float64)
+    X_train, X_val, X_test = X[train_idx], X[val_idx], X[test_idx]
+    y_train, y_val, y_test = label_cat[train_idx], label_cat[val_idx], label_cat[test_idx]
 
     run.record_dataset(features, labels, DATASET_PATH, "wordDataset",
                        train_samples=len(X_train), test_samples=len(X_test))
 
     scaler = StandardScaler().fit(X_train)
     X_train = scaler.transform(X_train)
+    X_val = scaler.transform(X_val)
     X_test  = scaler.transform(X_test)
 
     with (run.output_dir / "word_scaler.pkl").open("wb") as stream:
@@ -82,11 +84,11 @@ def _train_words(run):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     run.record_model(model, epochs=50, batch_size=32, split={
-        "test_size": 0.2, "validation_source": "test_set",
-        "split_random_state": 42, "stratified": True,
+        "test_size": 0.2, "validation_size": 0.2,
+        "split_random_state": 42, "duplicate_disjoint": True,
     })
 
-    model.fit(X_train, y_train, validation_data=(X_test, y_test),
+    model.fit(X_train, y_train, validation_data=(X_val, y_val),
               epochs=50, batch_size=32, verbose=1,
               callbacks=[run.callback(Callback)])
 
