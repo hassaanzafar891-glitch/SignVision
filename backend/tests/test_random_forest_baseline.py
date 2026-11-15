@@ -38,7 +38,7 @@ class RandomForestBaselineTests(unittest.TestCase):
         for table in baseline.TABLES.values():
             connection.execute(f"CREATE TABLE {table} (id INTEGER PRIMARY KEY, " +
                                ",".join(f"{name} REAL" for name in baseline.FEATURES) + ", label TEXT)")
-            for i in range(6):
+            for i in range(18):
                 connection.execute(f"INSERT INTO {table} VALUES ({','.join(['?'] * 44)})",
                                    [1000 + i, *([float(i)] * 42), "a" if i % 2 == 0 else "b"])
         connection.commit()
@@ -49,7 +49,7 @@ class RandomForestBaselineTests(unittest.TestCase):
         original = baseline.sha256(self.database)
         for kind in baseline.TABLES:
             x, y = baseline.load_dataset(self.database, kind)
-            self.assertEqual(len(x), 6)
+            self.assertEqual(len(x), 18)
             self.assertEqual(len(x[0]), 42)
             self.assertEqual(x[0], [0.0] * 42)
             self.assertEqual(x[1], [1.0] * 42)
@@ -57,7 +57,7 @@ class RandomForestBaselineTests(unittest.TestCase):
         self.assertEqual(original, baseline.sha256(self.database))
         with self.assertRaises(KeyError):
             baseline.load_dataset(self.database, "invalid_table")
-        with self.assertRaises(sqlite3.OperationalError):
+        with self.assertRaises(FileNotFoundError):
             baseline.load_dataset(self.backend / "missing.db", "alphabet")
         self.assertFalse((self.backend / "missing.db").exists())
 

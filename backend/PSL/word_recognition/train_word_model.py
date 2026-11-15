@@ -22,12 +22,15 @@ from tensorflow.keras.callbacks import Callback
 
 
 from tracking.training import BACKEND, TrainingRun
+from tracking.data_validation import validate_training_database
 
 DATASET_PATH = BACKEND / "data" / "db" / "main_dataset.db"
 
 
 def train_words():
+    validation = validate_training_database(DATASET_PATH, "wordDataset")
     with TrainingRun("word", __file__) as run:
+        run.metadata["data_validation"] = validation
         return _train_words(run)
 
 

@@ -20,6 +20,7 @@ import uuid
 
 from tracking.import_baselines import BACKEND, git_metadata, sha256
 from tracking.training import dataset_metadata
+from tracking.data_validation import validate_training_database
 
 
 TABLES = {"alphabet": "alphabetDataset", "word": "wordDataset"}
@@ -35,6 +36,7 @@ PARTITIONS = ("train", "validation", "test")
 def load_dataset(database, kind):
     table = TABLES[kind]  # Only known table names may enter SQL.
     database = Path(database).resolve()
+    validate_training_database(database, table)
     connection = sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)
     try:
         # Match the existing trainers' selected features and natural SQL order.

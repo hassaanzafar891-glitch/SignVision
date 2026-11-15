@@ -267,6 +267,90 @@ Accuracy is stored as a fraction in MLflow (approximately `0.98374` and `1.0`).
 These observations are not guarantees for new signers or real-world webcam input.
 They were read from existing experiments; no training was rerun for this update.
 
+## 7. Phase 1 validation and one-command workflow
+
+### Dataset provenance and automatic checks
+
+Original raw images/videos are private and unavailable in this submission.
+Reproduction starts with the DVC-tracked processed SQLite database, not original
+media extraction. The database has no signer IDs, so signer-independent evaluation
+cannot be established. Keep the existing database, DVC pointers and credentials
+unchanged when performing verification.
+
+Alphabet, word and RF entry points now validate the database before loading rows.
+`tracking/data_validation.py` checks SQLite integrity, required tables and columns,
+42 finite numerical features (not numeric strings), non-empty text labels,
+at least 15 samples, at least two classes, and at least three samples per class.
+The split helper then checks class coverage and duplicate-disjoint feasibility.
+Validation cannot prove label correctness or reconstruct the unavailable raw data.
+
+### Safe one-command verification (no training)
+
+```powershell
+Set-Location E:\LinguaSign
+$env:PYTHONPATH = Join-Path (Get-Location).Path "backend"
+& .\.venv-backend\Scripts\python.exe -m tracking.train_all
+```
+
+This command was executed successfully in validation-only mode: alphabet has
+15,363 samples/37 classes and word has 543 samples/5 classes. It does not import
+TensorFlow, contact MLflow or create training runs. The split audit also confirmed
+current train/validation/test counts of 9,218/3,070/3,075 for alphabet and
+351/88/104 for word, with full index coverage and no duplicate-vector overlap.
+Both existing RF split manifests match the reconstructed partition fingerprints.
+Historical NN partition-index hashes remain unavailable, so NN/RF comparison is
+still indicative, not a proven same-holdout comparison.
+
+Run the backend suite without training:
+
+```powershell
+& .\.venv-backend\Scripts\python.exe -B -m unittest discover -s backend/tests -p "test_*.py" -v
+```
+
+Tests use temporary databases, fake estimators and mocked neural training calls.
+The optional installed-MLflow test writes only to a temporary test store. Existing
+experiments, production models and DVC data are not changed. Dependency-free CI
+skips tests that require absent NumPy/scikit-learn or MLflow packages.
+
+### Future training reproduction (not executed during verification)
+
+With the dependencies installed and the compatible MLflow server from section 5
+already running, this is the single training command:
+
+```powershell
+& .\.venv-backend\Scripts\python.exe -m tracking.train_all --train --tracking-uri http://127.0.0.1:5000
+```
+
+It validates both tables, checks server access, then invokes alphabet NN, word NN,
+alphabet RF and word RF sequentially. NN runs use **SignVision Training**; RF runs
+use **SignVision Classical Baselines**. The wrapper temporarily enables tracking
+and restores its environment settings afterward. No existing MLflow run is resumed.
+The sequence was verified with mocked trainers; no model was retrained to test it.
+Seeded duplicate-disjoint splitting is repeatable for unchanged ordered data;
+TensorFlow weights and floating-point results are not guaranteed bit-identical.
+Alphabet plots must be closed for its command to finish. NN tracking remains
+best effort: inspect local `tracking_errors` before assuming every upload succeeded.
+
+### Verified registry entries and remaining limits
+
+Read-only inspection of the existing local SQL store found:
+
+| Registered name | Version | Status | Source |
+| --- | --- | --- | --- |
+| `SignVision-Alphabet` | 1 | READY | Existing alphabet `.h5` artifact |
+| `SignVision-Word` | 1 | READY | Existing word `.h5` artifact |
+
+Both source files exist. No versions were created, overwritten, promoted or deleted.
+The registered sources are raw `.h5` files without an `MLmodel` flavor manifest;
+`mlflow.pyfunc` loading and serving these versions have not been verified and may
+require separate future packaging. Registry status does not prove deployment
+readiness. The local MLflow `/health` endpoint returned HTTP 200 during inspection.
+
+In the UI at http://127.0.0.1:5000, use **Models** to inspect those versions and
+**Experiments** to inspect the existing NN and RF results. Completed RF results
+and the word validation/test gap are documented in
+[RANDOM_FOREST_BASELINES.md](docs/RANDOM_FOREST_BASELINES.md).
+
 ## Troubleshooting
 
 | Problem | Check |

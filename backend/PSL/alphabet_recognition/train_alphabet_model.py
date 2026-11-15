@@ -17,6 +17,7 @@ from tensorflow.keras.callbacks import Callback
 
 
 from tracking.training import BACKEND, TrainingRun
+from tracking.data_validation import validate_training_database
 
 DATASET_PATH = BACKEND / "data" / "db" / "main_dataset.db"
 
@@ -41,7 +42,9 @@ class EpochBar(Callback):
 
 
 def train_alphabets():
+    validation = validate_training_database(DATASET_PATH, "alphabetDataset")
     with TrainingRun("alphabet", __file__) as run:
+        run.metadata["data_validation"] = validation
         return _train_alphabets(run)
 
 

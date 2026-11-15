@@ -251,7 +251,7 @@ MediaPipe Holistic extracts 21 hand landmarks per frame, each carrying `[x, y, c
 
 Custom-collected PSL keypoint dataset captured via MediaPipe, stored in SQLite. Alphabet dataset uses `alphabetDataset` table; word dataset uses `wordDataset`. Confusion-matrix analysis was used iteratively to identify and correct misclassified letter pairs.
 
-The extracted keypoint dataset is versioned by DVC at `backend/data/db/main_dataset.db`; Git stores its `.dvc` pointer. Retrieve the data before training. Existing production models remain in Git. Raw source images/video frames are private and are not included.
+The extracted keypoint dataset is versioned by DVC at `backend/data/db/main_dataset.db`; Git stores its `.dvc` pointer. Retrieve the data before training. Existing production models remain in Git. Original raw images/videos are private and unavailable in this submission. Reproduction begins with processed SQLite data; original media-to-landmark extraction and signer provenance cannot be independently reproduced from this repository.
 
 ### Splitting and evaluation
 
@@ -269,6 +269,45 @@ Recorded results from the existing local `SignVision Training` MLflow experiment
 These are observed experiment results, not guaranteed accuracy on unseen signers or real-world webcam input. No training was repeated to update this documentation. See [HOW_TO_RUN.md](HOW_TO_RUN.md) for viewing the existing SQL-backed experiment and for creating new runs without changing production models.
 
 ---
+
+## Phase 1 validation and reproducible workflow
+
+All three trainers automatically call `tracking/data_validation.py` before loading
+training rows. Validation opens SQLite read-only and checks integrity, required
+tables/columns, 42 finite numerical features, non-empty text labels, minimum
+sample/class counts and at least three samples per class. The unchanged splitter
+separately verifies whether class-complete duplicate-disjoint partitions can be
+constructed. Neither check establishes signer independence.
+
+One command validates both tables without importing TensorFlow, contacting MLflow
+or training anything:
+
+```powershell
+Set-Location E:\LinguaSign
+$env:PYTHONPATH = Join-Path (Get-Location).Path "backend"
+& .\.venv-backend\Scripts\python.exe -m tracking.train_all
+```
+
+For an explicitly requested future reproduction, adding `--train --tracking-uri
+http://127.0.0.1:5000` runs alphabet NN, word NN and both Random Forest baselines
+after validation and an MLflow server-access check. Dependencies and the server
+must already be available; see [HOW_TO_RUN.md](HOW_TO_RUN.md). This reproduces the
+workflow and split policy, not bit-identical neural weights. Outputs stay in new
+run-specific directories; no production model is overwritten.
+
+The backend tests cover corrupt/invalid datasets, duplicate-disjoint splitting,
+training-only scaler fitting, mocked RF fitting/logging, temporary MLflow artifact
+round trips and a mocked workflow. Tests do not fit existing models.
+
+Local registry inspection found **SignVision-Alphabet v1** and **SignVision-Word
+v1**, both **READY**, with existing `.h5` source files. Their source directories
+have no `MLmodel` flavor manifest: catalog registration is verified, but MLflow
+serving/loading is not. No registry version was created or changed.
+
+Completed RF baselines recorded alphabet test accuracy **99.6748%** and word
+test accuracy **99.0385%**; word validation accuracy was **88.6364%**. Historical
+NN partition-index fingerprints are unavailable, so cross-model comparison remains
+indicative. See [Random Forest results](docs/RANDOM_FOREST_BASELINES.md).
 
 ## Deployment
 
