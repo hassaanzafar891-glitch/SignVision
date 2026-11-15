@@ -180,20 +180,39 @@ class TrainerContractTests(unittest.TestCase):
                                                  "optimizer": "adam", "metrics": ["accuracy"]})
             self.assertEqual(config["fit"]["epochs"], epochs)
             self.assertEqual(config["fit"]["batch_size"], batch)
+            self.assertEqual(config["split"]["method"], "split_three_way")
             self.assertEqual(config["split"]["test_size"], 0.2)
+            self.assertEqual(config["split"]["validation_size"], 0.2)
+            self.assertEqual(config["split"]["split_random_state"], 42)
+            self.assertTrue(config["split"]["duplicate_disjoint"])
+            self.assertNotIn("validation_split", config["fit"])
+            self.assertEqual(config["fit"]["validation_data"], {"expression": "(X_val, y_val)"})
             if name == "alphabet":
-                self.assertEqual(set(config["split"]), {"test_size"})
-                self.assertEqual(config["fit"]["validation_split"], 0.2)
                 self.assertIn("EpochBar()", config["fit"]["callbacks"]["expression"])
-            else:
-                self.assertEqual(config["split"]["random_state"], 42)
-                self.assertEqual(config["split"]["stratify"], {"expression": "label_encoded"})
-                self.assertEqual(config["fit"]["validation_data"], {"expression": "(X_test, y_test)"})
             source = path.read_text(encoding="utf-8")
             self.assertIn("StandardScaler().fit(X_train)", source)
             self.assertIn("X_train = scaler.transform(X_train)", source)
+            self.assertIn("X_val = scaler.transform(X_val)", source)
             self.assertIn("scaler.transform(X_test)", source)
             tree = ast.parse(source)
+            # No scaler fit/fit_transform may consume validation/test/full data.
+            scaler_fits = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                           and isinstance(node.func, ast.Attribute)
+                           and node.func.attr in ("fit", "fit_transform", "partial_fit")
+                           and (ast.unparse(node.func.value) == "StandardScaler()"
+                                or ast.unparse(node.func.value) == "scaler")]
+            self.assertEqual(len(scaler_fits), 1)
+            self.assertEqual(scaler_fits[0].func.attr, "fit")
+            self.assertEqual([ast.unparse(arg) for arg in scaler_fits[0].args], ["X_train"])
+            assignments = {ast.unparse(node.targets[0]): ast.unparse(node.value)
+                           for node in ast.walk(tree) if isinstance(node, ast.Assign)}
+            self.assertEqual(assignments["(X_train, X_val, X_test)"],
+                             "(X[train_idx], X[val_idx], X[test_idx])")
+            self.assertEqual(assignments["(y_train, y_val, y_test)"],
+                             "(label_encoded[train_idx], label_encoded[val_idx], label_encoded[test_idx])"
+                             if name == "alphabet" else
+                             "(label_cat[train_idx], label_cat[val_idx], label_cat[test_idx])")
+            self.assertTrue(assignments["(train_idx, val_idx, test_idx)"].startswith("split_three_way("))
             evaluations = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
                            and isinstance(node.func, ast.Attribute) and node.func.attr == "evaluate"]
             self.assertEqual(len(evaluations), 1)

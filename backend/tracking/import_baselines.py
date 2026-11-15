@@ -64,6 +64,10 @@ def current_script_config(path):
                 config["layers"].append({"type": name, **describe(call)})
             elif name == "train_test_split":
                 config["split"] = describe(call)["kwargs"]
+            elif name == "split_three_way":
+                config["split"] = {"method": name, **describe(call)["kwargs"]}
+                if len(call.args) > 2:
+                    config["split"]["seed"] = value(call.args[2])
             elif name == "StandardScaler":
                 config["scaler"] = {"type": name, **describe(call)}
         elif (
@@ -73,6 +77,26 @@ def current_script_config(path):
             and call.func.attr in ("compile", "fit")
         ):
             config[call.func.attr] = describe(call)["kwargs"]
+        elif (
+            isinstance(call.func, ast.Attribute)
+            and isinstance(call.func.value, ast.Name)
+            and call.func.value.id == "run"
+            and call.func.attr == "record_model"
+            and config.get("split", {}).get("method") == "split_three_way"
+        ):
+            # The trainer explicitly records the helper's target proportions,
+            # seed and duplicate policy. Read that metadata without importing
+            # the helper (which would pull NumPy/sklearn into baseline imports).
+            for keyword in call.keywords:
+                if keyword.arg == "split" and isinstance(keyword.value, ast.Dict):
+                    config["split"].update({
+                        key.value: value(item)
+                        for key, item in zip(keyword.value.keys, keyword.value.values)
+                        if isinstance(key, ast.Constant) and isinstance(key.value, str)
+                    })
+            # An explicit helper seed overrides the seed recorded in metadata.
+            if "seed" in config["split"]:
+                config["split"]["split_random_state"] = config["split"]["seed"]
     return config
 
 

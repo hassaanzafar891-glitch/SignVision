@@ -77,12 +77,16 @@ class BaselineTests(unittest.TestCase):
         word = importer.current_script_config(importer.script_path(self.backend, "word"))
         self.assertEqual(alphabet["fit"]["epochs"], 25)
         self.assertEqual(alphabet["fit"]["batch_size"], 1)
-        self.assertEqual(alphabet["fit"]["validation_split"], 0.2)
-        self.assertNotIn("random_state", alphabet["split"])
+        for config in (alphabet, word):
+            self.assertEqual(config["split"], {
+                "method": "split_three_way", "test_size": 0.2,
+                "validation_size": 0.2, "split_random_state": 42,
+                "duplicate_disjoint": True,
+            })
+            self.assertNotIn("validation_split", config["fit"])
+            self.assertEqual(config["fit"]["validation_data"], {"expression": "(X_val, y_val)"})
         self.assertEqual(word["fit"]["epochs"], 50)
         self.assertEqual(word["fit"]["batch_size"], 32)
-        self.assertEqual(word["split"]["random_state"], 42)
-        self.assertEqual(word["fit"]["validation_data"], {"expression": "(X_test, y_test)"})
         self.assertEqual(word["compile"]["optimizer"], "adam")
         self.assertEqual(word["compile"]["metrics"], ["accuracy"])
 
@@ -91,6 +95,24 @@ class BaselineTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             importer.import_baselines(self.client, self.backend, {})
         self.assertEqual(self.client.mock_calls, [])
+
+    def test_split_reader_supports_legacy_calls_and_explicit_helper_seeds(self):
+        path = self.backend / "config_fixture.py"
+        path.write_text("train_test_split(x, y, test_size=0.2, random_state=7)\n")
+        self.assertEqual(importer.current_script_config(path)["split"],
+                         {"test_size": 0.2, "random_state": 7})
+        for argument in ("seed=7", "7"):
+            with self.subTest(argument=argument):
+                path.write_text(
+                    f"split_three_way(features, labels, {argument})\n"
+                    'run.record_model(model, split={"test_size": 0.2, '
+                    '"validation_size": 0.2, "split_random_state": 42, '
+                    '"duplicate_disjoint": True})\n'
+                )
+                config = importer.current_script_config(path)["split"]
+                self.assertEqual(config["method"], "split_three_way")
+                self.assertEqual(config["split_random_state"], 7)
+                self.assertEqual(config["validation_size"], 0.2)
 
     def test_local_default_is_absolute_and_remote_is_optional(self):
         self.assertEqual(importer.tracking_uri(self.backend, {}),
@@ -116,6 +138,11 @@ class BaselineTests(unittest.TestCase):
 
         previous_uri = mlflow.get_tracking_uri()
         self.addCleanup(mlflow.set_tracking_uri, previous_uri)
+        # Newer local MLflow installs require explicit opt-in for file stores.
+        # This affects only this temporary fixture, never production storage.
+        environment = patch.dict("os.environ", {"MLFLOW_ALLOW_FILE_STORE": "true"})
+        environment.start()
+        self.addCleanup(environment.stop)
         runs = importer.import_baselines(mlflow, self.backend, {})
         client = MlflowClient(tracking_uri=importer.tracking_uri(self.backend, {}))
         for name, run_id in runs.items():

@@ -1,7 +1,16 @@
 import unittest
-import numpy as np
-from tracking.data_splits import split_three_way
+import importlib.util
+from pathlib import Path
+import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+HAS_SPLIT_DEPENDENCIES = all(importlib.util.find_spec(name) is not None
+                             for name in ("numpy", "sklearn"))
+if HAS_SPLIT_DEPENDENCIES:
+    import numpy as np
+    from tracking.data_splits import split_three_way
+
+@unittest.skipUnless(HAS_SPLIT_DEPENDENCIES, "NumPy/scikit-learn are not installed")
 class DataSplitTests(unittest.TestCase):
     def test_deterministic_and_duplicate_disjoint(self):
         rng = np.random.default_rng(12)
