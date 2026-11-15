@@ -1,344 +1,135 @@
-# SignVision - Pakistan Sign Language Detection System
-
-MLOps course project based on the LinguaSign application. Original attribution is retained below.
+# SignVision: Phase 1 MLOps for Pakistan Sign Language
 
 [![SignVision CI](https://github.com/hassaanzafar891-glitch/SignVision/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/hassaanzafar891-glitch/SignVision/actions/workflows/frontend-ci.yml)
 
-A real-time Pakistani Sign Language (PSL) recognition system that translates hand gestures into Urdu text and speech, with a full learning platform built on top.
-
-![LinguaSign Project Poster](docs/linguasign-poster.png)
-
----
-
-## Application Overview
-
-### Landing Page
-
-![LinguaSign Home](frontend/public/images/screenshots/home.png)
-
-The landing page introduces LinguaSign to new visitors with a bold hero section — a full-bleed animated background with a live hand-skeleton preview demonstrating PSL detection in real time. The headline communicates the core value proposition immediately: *Sign it. See it translated, instantly.* Below the fold, trust indicators display the system's reach (users, detections, accuracy), followed by a feature highlights section and navigation links to the core platform modules. The top navigation provides direct access to all major sections — Detect, Learn, Contact, and Feedback — with a persistent theme toggle and a prominent **Try the Detector** call-to-action. The overall aesthetic uses a dark base with a green accent system, reflecting the PSL branding throughout.
-
----
-
-### Sign Detector
-
-![Sign Detector](frontend/public/images/screenshots/sign.png)
-
-The Sign Detector uses the browser's `getUserMedia()` webcam access. The browser sends JPEG frames to FastAPI at `/api/predict-frame`; MediaPipe extracts landmarks and the existing alphabet or word model returns a prediction. The backend does not need direct access to the host webcam. Users can:
-
-- **Accept a letter** to append it to the current word
-- **Add a word to the sentence** and remove individual words
-- **Speak the sentence** using Urdu Edge TTS audio played by the browser
-- Switch to **Word Mode** for direct whole-word detection
-- Start and stop the camera; frame requests are sent sequentially
-
-The layout is split into a control panel on the left and the live camera feed on the right, keeping detection context and controls in the same view without context switching.
-
----
-
-### How It Works
-
-![How It Works](frontend/public/images/screenshots/how-it-works.png)
-
-An interactive, animated breakdown of the six-stage detection pipeline — from camera capture through MediaPipe landmark extraction, feature scaling, and neural network classification, to building words and speaking them aloud.
-
----
-
-### Dictionary
-
-![PSL Dictionary](frontend/public/images/screenshots/dictionary.png)
-
-A searchable reference covering all 37 alphabet signs and the 5 supported words, for learners who want to browse outside of live detection.
-
----
-
-## Features
-
-### Detection
-- **Real-time recognition** — detects 37 PSL alphabet letters and 5 common words via webcam
-- **Sentence builder** — accept letters → build words → compose full sentences
-- **Urdu speech output** - Urdu Edge TTS audio played in the browser (internet required)
-- **Word mode** — switch between letter-by-letter and full-word detection
-- **Browser camera** - captures JPEGs without a backend webcam device
-
-### Learning Platform
-- **Google sign-in** — account creation and login via NextAuth, backed by a local SQLite user store
-- **Dashboard** — day streak tracker, weekly activity chart, signs-detected counter, recent history
-- **Learn page** — browse all 37 PSL letters with hover-to-reveal sign images; quick quiz on PSL words
-- **Live Learn** — real-time webcam practice with collapsible letter sidebar
-- **Live Quiz** — timed quiz mode using the live camera
-- **Dictionary** — searchable reference for all letters and words
-- **Donate** — Stripe-powered donation page supporting the project
-- **Contact & Feedback** — forms that email submissions via Gmail SMTP and log them locally
-
-### UI / UX
-- **Light & dark mode** — persisted theme toggle across all pages
-- **Collapsible sidebar** — fold to icon-only view; hover the hand logo to reveal the expand button
-- **Fully responsive** — mobile-optimised layouts at 860 px and 560 px breakpoints
-- **Design system** — custom `ls-*` CSS classes, green accent, display font, Urdu font support
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16.2.4 (App Router), TypeScript |
-| Styling | Custom CSS design system (`globals.css`) |
-| Backend | FastAPI, Python 3.10 for the pinned ML stack |
-| ML / CV | MediaPipe, TensorFlow / Keras, scikit-learn, OpenCV |
-| Speech | Urdu Edge TTS audio with browser playback |
-
----
-
-## Project Structure
-
-```text
-backend/
-  main.py                         # FastAPI application
-  routers/browser_camera.py       # Browser JPEG inference endpoint
-  services/                       # Recognition and speech services
-  PSL/alphabet_recognition/       # Alphabet inference and training
-  PSL/word_recognition/           # Word inference and training
-  tracking/data_splits.py         # Duplicate-disjoint three-way split
-  tracking/training.py            # Optional MLflow tracking
-  data/db/main_dataset.db.dvc     # DVC pointer to the training database
-  data/models/                   # Existing production .h5 and .pkl files
-  data/training_runs/            # New, isolated training outputs (ignored)
-  mlruns/                       # Older local file-store experiments (ignored)
-  mlflow.db                     # Existing local SQL experiment store (ignored)
-  mlartifacts/                  # Existing local experiment artifacts (ignored)
-  requirements.txt
-  requirements-tracking.txt
-frontend/app/                    # Next.js pages, UI and API integrations
-.github/workflows/frontend-ci.yml # Lightweight backend/frontend CI
-```
-
----
-
-## Getting Started
-
-> Looking for a more detailed, step-by-step walkthrough (including common errors)? See [HOW_TO_RUN.md](HOW_TO_RUN.md).
-
-### Prerequisites
-
-- Python **3.10** for the pinned TensorFlow/MediaPipe training and inference environment (the local executable is `E:\Python310\python.exe`; adjust this path if installed elsewhere)
-- Node.js **22**, Git, and a webcam
-- DVC with HTTP support for retrieving training data; MLflow is optional for inference
-
-For a fresh checkout in PowerShell (skip cloning if `E:\LinguaSign` already exists):
-
-```powershell
-Set-Location E:\
-git clone https://github.com/hassaanzafar891-glitch/SignVision.git LinguaSign
-Set-Location E:\LinguaSign
-& "E:\Python310\python.exe" -m venv .venv-backend
-& .\.venv-backend\Scripts\python.exe -m pip install --timeout 1000 --retries 10 -r backend/requirements.txt
-```
-
-Start the backend in one PowerShell terminal:
-
-```powershell
-Set-Location E:\LinguaSign\backend
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-& ..\.venv-backend\Scripts\python.exe -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Start the frontend in a second terminal:
-
-```powershell
-Set-Location E:\LinguaSign\frontend
-npm ci
-if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
-npm run dev
-```
-
-Open [http://localhost:3000/sign](http://localhost:3000/sign) and allow camera access. Google sign-in, Stripe and SMTP need their own optional settings from the environment examples. The two application terminals must remain running.
-
-Existing models under `backend/data/models/` are used for **inference**. Running the app does not retrain them and does not require MLflow. For DVC retrieval, optional training, tracking and result viewing, follow the PowerShell sequence in [HOW_TO_RUN.md](HOW_TO_RUN.md).
-
-### MLOps workflow
-
-The DagsHub project is [hassaanzafar891-glitch/SignVision](https://dagshub.com/hassaanzafar891-glitch/SignVision). DVC remote `origin` points to its `.dvc` endpoint; MLflow uses the separate `.mlflow` endpoint.
-
-After setting up the training environment and retrieving DVC data as described in the run guide, these **optional training commands** run from the repository root:
-
-```powershell
-Set-Location E:\LinguaSign
-$env:PYTHONPATH = (Join-Path (Get-Location).Path "backend")
-$env:SIGNVISION_TRACKING_ENABLED = "false"
-& .\.venv-backend\Scripts\python.exe -m PSL.alphabet_recognition.train_alphabet_model
-& .\.venv-backend\Scripts\python.exe -m PSL.word_recognition.train_word_model
-```
-
-For tracked training, install the separate `backend/requirements-tracking.txt` into the training environment, start the MLflow server from the run guide, and set `SIGNVISION_TRACKING_ENABLED=true` and `MLFLOW_TRACKING_URI=http://127.0.0.1:5000`. Tracking is disabled by default. `PYTHONPATH` makes `tracking` and `PSL` importable when launching modules from the repository root.
-
-New training runs write their `.h5`, scaler, label encoder and metadata to `backend/data/training_runs/<model>/<timestamp>-<UUID>/`. They do **not** overwrite the existing production artifacts. Repeating training is optional and does not guarantee bit-for-bit identical weights.
-
----
-
-## How to Use
-
-1. Open the app and navigate to **Sign Detector** from the sidebar
-2. Click **Start Detection** and allow camera access
-3. Make a PSL hand sign in front of your webcam
-4. The detected letter appears in the **Detected Letter** panel
-5. Click **Accept Letter** to add it to your current word
-6. Click **Add Word to Sentence** when a word is complete
-7. Use **Speak Sentence** to hear the output in Urdu
-8. Click **Stop Detection** when finished to release the camera
-
-To learn PSL signs, visit the **Learn** page — hover any letter card to see its hand sign image, or take the quick quiz on common words.
-
-### Tips
-
-- Use good lighting for best accuracy
-- Keep your hand centered in the camera frame
-- Enable **Word Mode** to detect full words directly
-- Toggle **Enable Speech** to speak new live predictions
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/start-capture` | Legacy server-camera capture; not used by the browser sign page |
-| `POST` | `/api/stop-capture` | Release webcam |
-| `POST` | `/api/match` | Run detection on current frame, return label |
-| `GET` | `/api/stream` | MJPEG live video stream |
-| `POST` | `/api/predict-frame?mode=0` | Infer an uploaded JPEG; mode 0 = alphabet, 1 = word |
-| `GET` | `/api/speech-audio/{label}` | Generate/serve Urdu speech for browser playback |
-
----
-
-## Model Details
-
-Two separate models are trained and served — one for alphabet letters, one for words. Both share the same input pipeline.
-
-### Input pipeline
-
-MediaPipe Holistic extracts 21 hand landmarks per frame, each carrying `[x, y, confidence]` (63 values total). Confidence scores are discarded, leaving **42 features per frame** (21 landmarks × XY pixel coordinates). These are standardised with a `StandardScaler` before being passed to the model.
-
-### Alphabet model — 37 classes
-
-| Layer | Units | Activation |
-|-------|-------|-----------|
-| Dense | 120 | ReLU |
-| Dropout | 0.3 | — |
-| Dense | 64 | ReLU |
-| Dropout | 0.3 | — |
-| Dense (output) | 37 | Softmax |
-
-- Optimizer: Adam · Loss: Categorical cross-entropy
-- Train/validation/test targets: approximately 60 / 20 / 20; epochs: 25; batch size: 1
-
-### Word model — 5 classes
-
-| Layer | Units | Activation |
-|-------|-------|-----------|
-| Dense | 256 | ReLU |
-| Dropout | 0.3 | — |
-| Dense | 128 | ReLU |
-| Dropout | 0.3 | — |
-| Dense | 64 | ReLU |
-| Dense (output) | 5 | Softmax |
-
-- Optimizer: Adam · Loss: Categorical cross-entropy
-- Train/validation/test targets: approximately 60 / 20 / 20; epochs: 50; batch size: 32
-
-### Training data
-
-Custom-collected PSL keypoint dataset captured via MediaPipe, stored in SQLite. Alphabet dataset uses `alphabetDataset` table; word dataset uses `wordDataset`. Confusion-matrix analysis was used iteratively to identify and correct misclassified letter pairs.
-
-The extracted keypoint dataset is versioned by DVC at `backend/data/db/main_dataset.db`; Git stores its `.dvc` pointer. Retrieve the data before training. Existing production models remain in Git. Original raw images/videos are private and unavailable in this submission. Reproduction begins with processed SQLite data; original media-to-landmark extraction and signer provenance cannot be independently reproduced from this repository.
-
-### Splitting and evaluation
-
-Both trainers call `split_three_way()` from `backend/tracking/data_splits.py`. It uses deterministic group shuffles with base seed 42 and keeps identical 42-feature vectors in the same partition. The targets are approximately **60% training, 20% validation and 20% testing**; row counts can vary because splitting operates on duplicate groups. Every accepted partition contains every class. The scaler is fitted only on training data, validation data is used during fitting, and final evaluation uses the separate test data.
-
-This is **not signer-independent evaluation**: signer IDs are unavailable. Different feature vectors from the same person or closely related examples can still appear in different partitions. Reproducible splitting requires unchanged input rows and ordering; it does not guarantee deterministic neural-network training.
-
-Recorded results from the existing local `SignVision Training` MLflow experiment:
-
-| Model | Test accuracy | Test examples |
-| --- | --- | --- |
-| Alphabet | **98.37%** | 3,075 |
-| Word | **100% on a small test dataset** | 104 |
-
-These are observed experiment results, not guaranteed accuracy on unseen signers or real-world webcam input. No training was repeated to update this documentation. See [HOW_TO_RUN.md](HOW_TO_RUN.md) for viewing the existing SQL-backed experiment and for creating new runs without changing production models.
-
----
-
-## Phase 1 validation and reproducible workflow
-
-All three trainers automatically call `tracking/data_validation.py` before loading
-training rows. Validation opens SQLite read-only and checks integrity, required
-tables/columns, 42 finite numerical features, non-empty text labels, minimum
-sample/class counts and at least three samples per class. The unchanged splitter
-separately verifies whether class-complete duplicate-disjoint partitions can be
-constructed. Neither check establishes signer independence.
-
-One command validates both tables without importing TensorFlow, contacting MLflow
-or training anything:
+SignVision is an MLOps course project for alphabet and word recognition from
+42 hand-landmark features. Phase 1 focuses on validated data, reproducible
+partitioning, tracked experiments, classical baselines and automated verification.
+
+- **GitHub:** [hassaanzafar891-glitch/SignVision](https://github.com/hassaanzafar891-glitch/SignVision)
+- **DagsHub:** [hassaanzafar891-glitch/SignVision](https://dagshub.com/hassaanzafar891-glitch/SignVision)
+- **Setup and commands:** [HOW_TO_RUN.md](HOW_TO_RUN.md)
+
+## Phase 1 implementation
+
+| Area | Implementation |
+| --- | --- |
+| Dataset versioning | DVC tracks the processed SQLite database; Git stores its pointer. |
+| Validation | Automatic read-only integrity, schema, label, feature and sample-count checks before training data is loaded. |
+| Partitioning | Shared `split_three_way()` with seed 42 and duplicate-disjoint train/validation/test partitions. |
+| Neural models | Separate alphabet and word classifiers; scalers are fitted only on training data. |
+| Classical baseline | Separate Random Forest classifiers with fixed settings and train-only fitting. |
+| Experiment tracking | MLflow logs configuration, dataset fingerprints, Git provenance, metrics and artifacts. |
+| Model registry | Existing alphabet and word version-1 entries verified; serving readiness remains unverified. |
+| Reproduction | One entry point validates by default and requires `--train` to fit models. |
+| Verification | Backend tests and lightweight GitHub Actions checks; no training or deployment in CI. |
+
+The application provides browser-webcam inference through FastAPI and a Next.js
+frontend, with Urdu text/speech and sentence-building controls. Application
+inference uses existing production artifacts and does not require retraining.
+
+## Data and provenance
+
+The training input is `backend/data/db/main_dataset.db`, retrieved using DVC.
+It contains `alphabetDataset` (15,363 rows, 37 classes) and `wordDataset`
+(543 rows, 5 classes). Inputs are `x1,y1,...,x21,y21`; `label` is the target and
+`id` is excluded from model features.
+
+The application and supplied processed data come from the upstream project
+credited under [Source attribution and license](#source-attribution-and-license).
+Original raw images/videos are private and unavailable in this submission.
+Reproduction begins with processed data; the original media extraction and signer
+provenance cannot be independently reconstructed from this repository.
+
+Validation checks required columns, finite numerical features, non-empty text
+labels, at least 15 samples, two classes and three samples per class. The splitter
+separately checks class coverage and whether valid duplicate-disjoint partitions
+can be formed. These checks do not prove that labels are semantically correct.
+
+## Models and evaluation
+
+Both neural trainers and the RF baseline use approximately **60% training, 20%
+validation and 20% testing**. Identical feature vectors stay in one partition;
+actual row ratios vary with duplicate-group sizes. For unchanged ordered input,
+splitting is reproducible. Neural weights are not guaranteed bit-identical.
+Signer IDs are unavailable, so these are **not signer-independent evaluations**.
+
+| Model | Architecture/settings | Recorded test accuracy |
+| --- | --- | ---: |
+| Alphabet NN | Dense 120/64/37, dropout 0.3, Adam; 25 epochs, batch size 1 | 98.37% |
+| Word NN | Dense 256/128/64/5, dropout 0.3, Adam; 50 epochs, batch size 32 | 100% on 104 test examples |
+| Alphabet RF | 100 trees, depth 20, seed 42, two CPU workers | 99.6748% |
+| Word RF | Same fixed RF settings | 99.0385% |
+
+These are existing experiment results, not new measurements from this documentation
+update. Historical NN partition-index hashes are unavailable, so NN/RF comparisons
+are **indicative only**. The word RF validation accuracy is 88.6364%, versus
+99.0385% test accuracy, a 10.4021 percentage-point gap. Small sample size and
+partition-dependent performance limit generalization claims. RF test macro F1
+and full results are in [RANDOM_FOREST_BASELINES.md](docs/RANDOM_FOREST_BASELINES.md).
+
+## Validate and reproduce
+
+After following the environment and DVC setup in [HOW_TO_RUN.md](HOW_TO_RUN.md),
+run these safe PowerShell checks:
 
 ```powershell
 Set-Location E:\LinguaSign
 $env:PYTHONPATH = Join-Path (Get-Location).Path "backend"
 & .\.venv-backend\Scripts\python.exe -m tracking.train_all
+& .\.venv-backend\Scripts\python.exe -B -m unittest discover -s backend/tests -p "test_*.py" -v
 ```
 
-For an explicitly requested future reproduction, adding `--train --tracking-uri
-http://127.0.0.1:5000` runs alphabet NN, word NN and both Random Forest baselines
-after validation and an MLflow server-access check. Dependencies and the server
-must already be available; see [HOW_TO_RUN.md](HOW_TO_RUN.md). This reproduces the
-workflow and split policy, not bit-identical neural weights. Outputs stay in new
-run-specific directories; no production model is overwritten.
+The first command validates only. To intentionally reproduce training, with a
+compatible MLflow server already running:
 
-The backend tests cover corrupt/invalid datasets, duplicate-disjoint splitting,
-training-only scaler fitting, mocked RF fitting/logging, temporary MLflow artifact
-round trips and a mocked workflow. Tests do not fit existing models.
+```powershell
+& .\.venv-backend\Scripts\python.exe -m tracking.train_all --train --tracking-uri http://127.0.0.1:5000
+```
 
-Local registry inspection found **SignVision-Alphabet v1** and **SignVision-Word
-v1**, both **READY**, with existing `.h5` source files. Their source directories
-have no `MLmodel` flavor manifest: catalog registration is verified, but MLflow
-serving/loading is not. No registry version was created or changed.
+That command validates both tables, checks server access and runs both NNs and
+both RF baselines. New outputs go under `backend/data/training_runs/`; production
+models, existing experiments and datasets are not overwritten. No inference model
+is automatically replaced. The workflow was verified using mocked training calls;
+actual retraining was not performed during Phase 1 verification.
 
-Completed RF baselines recorded alphabet test accuracy **99.6748%** and word
-test accuracy **99.0385%**; word validation accuracy was **88.6364%**. Historical
-NN partition-index fingerprints are unavailable, so cross-model comparison remains
-indicative. See [Random Forest results](docs/RANDOM_FOREST_BASELINES.md).
+## Tracking, registry and verification limits
 
-## Deployment
+Local experiments use `backend/mlflow.db` and `backend/mlartifacts/`; the older
+`backend/mlruns/` store remains separate. MLflow client dependencies are in
+`backend/requirements-tracking.txt`, separate from inference dependencies.
 
-- **Backend** — deploy as a standard FastAPI app (e.g. Render, Railway, Fly.io). Set the environment variables from `backend/.env.example`, including `ALLOWED_ORIGINS` pointed at your deployed frontend's URL.
-- **Frontend** — deploy to Vercel (or any Node host) with the variables from `frontend/.env.example`, pointing `NEXT_PUBLIC_API_URL` at your deployed backend.
-- The live camera stream and detection rely on the browser's webcam access, so both frontend and backend should be served over HTTPS in production.
+Phase 1 verification found `SignVision-Alphabet` v1 and `SignVision-Word` v1 both
+READY, with existing `.h5` source files. Those sources lack `MLmodel` flavor
+manifests, so catalog registration does not establish MLflow serving readiness.
+NN logging is best effort; inspect local `tracking_errors` for failed uploads.
 
----
+The latest Phase 1 backend verification passed **42 tests**. A dependency-free CI
+run passed 38 with four expected dependency-related skips. Tests cover invalid
+and corrupted data, split separation, train-only scaling, mocked RF fitting,
+temporary MLflow storage and workflow orchestration. They do not establish
+real-world recognition accuracy or deployment readiness.
 
-## Project Docs
+## Repository guide
 
-- [HOW_TO_RUN.md](HOW_TO_RUN.md) - PowerShell application, DVC, training and MLflow instructions
-- [docs/CI.md](docs/CI.md) - GitHub Actions checks and limitations
-- [docs/BROWSER_CAMERA_DOCKER.md](docs/BROWSER_CAMERA_DOCKER.md) - browser camera and Docker notes
+- `backend/tracking/`: validation, partitioning, tracking, baseline and workflow tools.
+- `backend/PSL/`: neural training and inference modules.
+- `backend/data/models/`: existing production model/scaler/encoder artifacts.
+- `backend/tests/`: automated checks using temporary fixtures.
+- `frontend/`: Next.js application; Python training uses a separate environment.
+- [HOW_TO_RUN.md](HOW_TO_RUN.md): PowerShell setup, DVC, tracking, training and application commands.
+- [docs/CI.md](docs/CI.md): CI scope and limitations.
+- [docs/BROWSER_CAMERA_DOCKER.md](docs/BROWSER_CAMERA_DOCKER.md): browser-camera and Docker notes.
 
-- [`docs/final-presentation.pptx`](docs/final-presentation.pptx) — final FYP defense presentation
-- [`docs/fyp-logics.docx`](docs/fyp-logics.docx) — design/logic notes written during development
-- An earlier, simpler iteration of the UI (before the LinguaSign redesign) is preserved at [linguasign-sign-to-speech-converter](https://github.com/waqaswajla/linguasign-sign-to-speech-converter)
+## Project Attribution and License
 
----
+SignVision is an MLOps-focused extension of the
+[Pakistan Sign Language Detection System](https://github.com/waqaswajla/pakistan-sign-language-detection-system).
 
-## License
+This project extends the existing application with dataset versioning
+using DVC, automated data validation, reproducible training,
+classical ML baselines, MLflow experiment tracking, model registration,
+and CI/CD workflows.
 
-This project is licensed under the [MIT License](LICENSE).
-
-Copyright (c) 2026 Waqas Ahmed
-
----
-
-## Author
-
-**Waqas Ahmed** — [waqaswajla](https://github.com/waqaswajla)
-
-For any queries, reach out at wow.992du@gmail.com or +92 300 0700908.
+The original application and dataset remain attributed to their
+respective source. The project retains the original MIT License.
