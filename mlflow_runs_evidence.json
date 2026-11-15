@@ -1,0 +1,836 @@
+{
+    "runs":  [
+                 {
+                     "info":  {
+                                  "run_uuid":  "c305b818152a401c949736e9ec6d846f",
+                                  "experiment_id":  "3",
+                                  "run_name":  "word-classical-random-forest-20261115T145347386949Z-511906faafc5482ab7dbe259d290b078",
+                                  "user_id":  "Hassaan Zafar",
+                                  "status":  "FINISHED",
+                                  "start_time":  1794754427589,
+                                  "end_time":  1794754428399,
+                                  "artifact_uri":  "file:///E:/LinguaSign/backend/mlartifacts/3/c305b818152a401c949736e9ec6d846f/artifacts",
+                                  "lifecycle_stage":  "active",
+                                  "run_id":  "c305b818152a401c949736e9ec6d846f"
+                              },
+                     "data":  {
+                                  "metrics":  [
+                                                  {
+                                                      "key":  "train_accuracy",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794754428029,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "train_macro_f1",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794754428029,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "validation_accuracy",
+                                                      "value":  0.8863636363636364,
+                                                      "timestamp":  1794754428121,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "validation_macro_f1",
+                                                      "value":  0.902063492063492,
+                                                      "timestamp":  1794754428121,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "test_accuracy",
+                                                      "value":  0.9903846153846154,
+                                                      "timestamp":  1794754428213,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "test_macro_f1",
+                                                      "value":  0.9903641456582634,
+                                                      "timestamp":  1794754428213,
+                                                      "step":  0
+                                                  }
+                                              ],
+                                  "params":  [
+                                                 {
+                                                     "key":  "bootstrap",
+                                                     "value":  "True"
+                                                 },
+                                                 {
+                                                     "key":  "ccp_alpha",
+                                                     "value":  "0.0"
+                                                 },
+                                                 {
+                                                     "key":  "class_weight",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "criterion",
+                                                     "value":  "gini"
+                                                 },
+                                                 {
+                                                     "key":  "max_depth",
+                                                     "value":  "20"
+                                                 },
+                                                 {
+                                                     "key":  "max_features",
+                                                     "value":  "sqrt"
+                                                 },
+                                                 {
+                                                     "key":  "max_leaf_nodes",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "max_samples",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "min_impurity_decrease",
+                                                     "value":  "0.0"
+                                                 },
+                                                 {
+                                                     "key":  "min_samples_leaf",
+                                                     "value":  "1"
+                                                 },
+                                                 {
+                                                     "key":  "min_samples_split",
+                                                     "value":  "2"
+                                                 },
+                                                 {
+                                                     "key":  "min_weight_fraction_leaf",
+                                                     "value":  "0.0"
+                                                 },
+                                                 {
+                                                     "key":  "monotonic_cst",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "n_estimators",
+                                                     "value":  "100"
+                                                 },
+                                                 {
+                                                     "key":  "n_jobs",
+                                                     "value":  "2"
+                                                 },
+                                                 {
+                                                     "key":  "oob_score",
+                                                     "value":  "False"
+                                                 },
+                                                 {
+                                                     "key":  "random_state",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "verbose",
+                                                     "value":  "0"
+                                                 },
+                                                 {
+                                                     "key":  "warm_start",
+                                                     "value":  "False"
+                                                 },
+                                                 {
+                                                     "key":  "model_name",
+                                                     "value":  "word_random_forest"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.table",
+                                                     "value":  "wordDataset"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.samples",
+                                                     "value":  "543"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.features",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.class_count",
+                                                     "value":  "5"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.sha256",
+                                                     "value":  "18a9e8775ab4239d06bb72af8f7031644cccc5315705ca51b1996ce8a4c47bdc"
+                                                 },
+                                                 {
+                                                     "key":  "split_seed",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "split_method",
+                                                     "value":  "split_three_way"
+                                                 },
+                                                 {
+                                                     "key":  "duplicate_disjoint",
+                                                     "value":  "True"
+                                                 },
+                                                 {
+                                                     "key":  "scaling",
+                                                     "value":  "none (tree classifier)"
+                                                 },
+                                                 {
+                                                     "key":  "split.train_samples",
+                                                     "value":  "351"
+                                                 },
+                                                 {
+                                                     "key":  "split.validation_samples",
+                                                     "value":  "88"
+                                                 },
+                                                 {
+                                                     "key":  "split.test_samples",
+                                                     "value":  "104"
+                                                 },
+                                                 {
+                                                     "key":  "previously_recorded_nn.word.test_accuracy",
+                                                     "value":  "1.0"
+                                                 }
+                                             ],
+                                  "tags":  [
+                                               {
+                                                   "key":  "mlflow.user",
+                                                   "value":  "Hassaan Zafar"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.name",
+                                                   "value":  "E:\\LinguaSign\\backend\\tracking\\train_random_forest.py"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.type",
+                                                   "value":  "LOCAL"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.git.commit",
+                                                   "value":  "f0bff27c978e8ca9168740d99fc763e089359d32"
+                                               },
+                                               {
+                                                   "key":  "baseline.type",
+                                                   "value":  "classical_random_forest"
+                                               },
+                                               {
+                                                   "key":  "model.family",
+                                                   "value":  "classical_ml"
+                                               },
+                                               {
+                                                   "key":  "model.kind",
+                                                   "value":  "word"
+                                               },
+                                               {
+                                                   "key":  "training.git.commit",
+                                                   "value":  "f0bff27c978e8ca9168740d99fc763e089359d32"
+                                               },
+                                               {
+                                                   "key":  "training.git.dirty",
+                                                   "value":  "true"
+                                               },
+                                               {
+                                                   "key":  "mlflow.runName",
+                                                   "value":  "word-classical-random-forest-20261115T145347386949Z-511906faafc5482ab7dbe259d290b078"
+                                               },
+                                               {
+                                                   "key":  "comparison.split_comparability",
+                                                   "value":  "not_verified"
+                                               }
+                                           ]
+                              },
+                     "inputs":  {
+
+                                },
+                     "outputs":  {
+
+                                 }
+                 },
+                 {
+                     "info":  {
+                                  "run_uuid":  "4a8c5961b5424905afd918c919411333",
+                                  "experiment_id":  "3",
+                                  "run_name":  "alphabet-classical-random-forest-20261115T145338368785Z-ebaa8937616a431babf90a10a47480b5",
+                                  "user_id":  "Hassaan Zafar",
+                                  "status":  "FINISHED",
+                                  "start_time":  1794754418930,
+                                  "end_time":  1794754427197,
+                                  "artifact_uri":  "file:///E:/LinguaSign/backend/mlartifacts/3/4a8c5961b5424905afd918c919411333/artifacts",
+                                  "lifecycle_stage":  "active",
+                                  "run_id":  "4a8c5961b5424905afd918c919411333"
+                              },
+                     "data":  {
+                                  "metrics":  [
+                                                  {
+                                                      "key":  "train_accuracy",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794754426512,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "train_macro_f1",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794754426512,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "validation_accuracy",
+                                                      "value":  0.9970684039087948,
+                                                      "timestamp":  1794754426681,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "validation_macro_f1",
+                                                      "value":  0.9964661149079304,
+                                                      "timestamp":  1794754426681,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "test_accuracy",
+                                                      "value":  0.9967479674796748,
+                                                      "timestamp":  1794754426865,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "test_macro_f1",
+                                                      "value":  0.9963656416522116,
+                                                      "timestamp":  1794754426865,
+                                                      "step":  0
+                                                  }
+                                              ],
+                                  "params":  [
+                                                 {
+                                                     "key":  "bootstrap",
+                                                     "value":  "True"
+                                                 },
+                                                 {
+                                                     "key":  "ccp_alpha",
+                                                     "value":  "0.0"
+                                                 },
+                                                 {
+                                                     "key":  "class_weight",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "criterion",
+                                                     "value":  "gini"
+                                                 },
+                                                 {
+                                                     "key":  "max_depth",
+                                                     "value":  "20"
+                                                 },
+                                                 {
+                                                     "key":  "max_features",
+                                                     "value":  "sqrt"
+                                                 },
+                                                 {
+                                                     "key":  "max_leaf_nodes",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "max_samples",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "min_impurity_decrease",
+                                                     "value":  "0.0"
+                                                 },
+                                                 {
+                                                     "key":  "min_samples_leaf",
+                                                     "value":  "1"
+                                                 },
+                                                 {
+                                                     "key":  "min_samples_split",
+                                                     "value":  "2"
+                                                 },
+                                                 {
+                                                     "key":  "min_weight_fraction_leaf",
+                                                     "value":  "0.0"
+                                                 },
+                                                 {
+                                                     "key":  "monotonic_cst",
+                                                     "value":  "None"
+                                                 },
+                                                 {
+                                                     "key":  "n_estimators",
+                                                     "value":  "100"
+                                                 },
+                                                 {
+                                                     "key":  "n_jobs",
+                                                     "value":  "2"
+                                                 },
+                                                 {
+                                                     "key":  "oob_score",
+                                                     "value":  "False"
+                                                 },
+                                                 {
+                                                     "key":  "random_state",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "verbose",
+                                                     "value":  "0"
+                                                 },
+                                                 {
+                                                     "key":  "warm_start",
+                                                     "value":  "False"
+                                                 },
+                                                 {
+                                                     "key":  "model_name",
+                                                     "value":  "alphabet_random_forest"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.table",
+                                                     "value":  "alphabetDataset"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.samples",
+                                                     "value":  "15363"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.features",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.class_count",
+                                                     "value":  "37"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.sha256",
+                                                     "value":  "b2cdba55ac99729271efdb76603bd1ef30de05c59d813e5c57f2565663256ebd"
+                                                 },
+                                                 {
+                                                     "key":  "split_seed",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "split_method",
+                                                     "value":  "split_three_way"
+                                                 },
+                                                 {
+                                                     "key":  "duplicate_disjoint",
+                                                     "value":  "True"
+                                                 },
+                                                 {
+                                                     "key":  "scaling",
+                                                     "value":  "none (tree classifier)"
+                                                 },
+                                                 {
+                                                     "key":  "split.train_samples",
+                                                     "value":  "9218"
+                                                 },
+                                                 {
+                                                     "key":  "split.validation_samples",
+                                                     "value":  "3070"
+                                                 },
+                                                 {
+                                                     "key":  "split.test_samples",
+                                                     "value":  "3075"
+                                                 },
+                                                 {
+                                                     "key":  "previously_recorded_nn.alphabet.test_accuracy",
+                                                     "value":  "0.9837"
+                                                 }
+                                             ],
+                                  "tags":  [
+                                               {
+                                                   "key":  "mlflow.user",
+                                                   "value":  "Hassaan Zafar"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.name",
+                                                   "value":  "E:\\LinguaSign\\backend\\tracking\\train_random_forest.py"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.type",
+                                                   "value":  "LOCAL"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.git.commit",
+                                                   "value":  "f0bff27c978e8ca9168740d99fc763e089359d32"
+                                               },
+                                               {
+                                                   "key":  "baseline.type",
+                                                   "value":  "classical_random_forest"
+                                               },
+                                               {
+                                                   "key":  "model.family",
+                                                   "value":  "classical_ml"
+                                               },
+                                               {
+                                                   "key":  "model.kind",
+                                                   "value":  "alphabet"
+                                               },
+                                               {
+                                                   "key":  "training.git.commit",
+                                                   "value":  "f0bff27c978e8ca9168740d99fc763e089359d32"
+                                               },
+                                               {
+                                                   "key":  "training.git.dirty",
+                                                   "value":  "true"
+                                               },
+                                               {
+                                                   "key":  "mlflow.runName",
+                                                   "value":  "alphabet-classical-random-forest-20261115T145338368785Z-ebaa8937616a431babf90a10a47480b5"
+                                               },
+                                               {
+                                                   "key":  "comparison.split_comparability",
+                                                   "value":  "not_verified"
+                                               }
+                                           ]
+                              },
+                     "inputs":  {
+
+                                },
+                     "outputs":  {
+
+                                 }
+                 },
+                 {
+                     "info":  {
+                                  "run_uuid":  "89a7c4b32367407e84f6ed7d85462a76",
+                                  "experiment_id":  "2",
+                                  "run_name":  "word-20261115T135637200430Z-3cf3ebd847df48c3b74b2c76b5f9d97d",
+                                  "user_id":  "Hassaan Zafar",
+                                  "status":  "FINISHED",
+                                  "start_time":  1794751000827,
+                                  "end_time":  1794751019189,
+                                  "artifact_uri":  "file:///E:/LinguaSign/backend/mlartifacts/2/89a7c4b32367407e84f6ed7d85462a76/artifacts",
+                                  "lifecycle_stage":  "active",
+                                  "run_id":  "89a7c4b32367407e84f6ed7d85462a76"
+                              },
+                     "data":  {
+                                  "metrics":  [
+                                                  {
+                                                      "key":  "loss",
+                                                      "value":  0.0009634944144636393,
+                                                      "timestamp":  1794751018477,
+                                                      "step":  50
+                                                  },
+                                                  {
+                                                      "key":  "accuracy",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794751018477,
+                                                      "step":  50
+                                                  },
+                                                  {
+                                                      "key":  "val_loss",
+                                                      "value":  0.002573531586676836,
+                                                      "timestamp":  1794751018477,
+                                                      "step":  50
+                                                  },
+                                                  {
+                                                      "key":  "val_accuracy",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794751018477,
+                                                      "step":  50
+                                                  },
+                                                  {
+                                                      "key":  "test_loss",
+                                                      "value":  0.0011461551766842604,
+                                                      "timestamp":  1794751018736,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "test_accuracy",
+                                                      "value":  1.0,
+                                                      "timestamp":  1794751018736,
+                                                      "step":  0
+                                                  }
+                                              ],
+                                  "params":  [
+                                                 {
+                                                     "key":  "dataset.source",
+                                                     "value":  "main_dataset.db"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.table",
+                                                     "value":  "wordDataset"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.samples",
+                                                     "value":  "543"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.features",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.class_count",
+                                                     "value":  "5"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.sha256",
+                                                     "value":  "18a9e8775ab4239d06bb72af8f7031644cccc5315705ca51b1996ce8a4c47bdc"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.fingerprint_method",
+                                                     "value":  "sha256-ordered-json-feature-label-rows-v1"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.train_samples",
+                                                     "value":  "351"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.test_samples",
+                                                     "value":  "104"
+                                                 },
+                                                 {
+                                                     "key":  "model_name",
+                                                     "value":  "word"
+                                                 },
+                                                 {
+                                                     "key":  "architecture",
+                                                     "value":  "[{\"type\":\"Dense\",\"units\":256,\"activation\":\"relu\"},{\"type\":\"Dropout\",\"rate\":0.3},{\"type\":\"Dense\",\"units\":128,\"activation\":\"relu\"},{\"type\":\"Dropout\",\"rate\":0.3},{\"type\":\"Dense\",\"units\":64,\"activation\":\"relu\"},{\"type\":\"Dense\",\"units\":5,\"activation\":\"softmax\"}]"
+                                                 },
+                                                 {
+                                                     "key":  "epochs",
+                                                     "value":  "50"
+                                                 },
+                                                 {
+                                                     "key":  "batch_size",
+                                                     "value":  "32"
+                                                 },
+                                                 {
+                                                     "key":  "learning_rate",
+                                                     "value":  "0.0010000000474974513"
+                                                 },
+                                                 {
+                                                     "key":  "optimizer",
+                                                     "value":  "Adam"
+                                                 },
+                                                 {
+                                                     "key":  "test_size",
+                                                     "value":  "0.2"
+                                                 },
+                                                 {
+                                                     "key":  "validation_size",
+                                                     "value":  "0.2"
+                                                 },
+                                                 {
+                                                     "key":  "split_random_state",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "duplicate_disjoint",
+                                                     "value":  "True"
+                                                 }
+                                             ],
+                                  "tags":  [
+                                               {
+                                                   "key":  "mlflow.user",
+                                                   "value":  "Hassaan Zafar"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.name",
+                                                   "value":  "backend\\PSL\\word_recognition\\train_word_model.py"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.type",
+                                                   "value":  "LOCAL"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.git.commit",
+                                                   "value":  "44ddf43c0625ce8ab0161b52651aaa33e8e9ce36"
+                                               },
+                                               {
+                                                   "key":  "model.name",
+                                                   "value":  "word"
+                                               },
+                                               {
+                                                   "key":  "training.performed",
+                                                   "value":  "true"
+                                               },
+                                               {
+                                                   "key":  "training.git.commit",
+                                                   "value":  "44ddf43c0625ce8ab0161b52651aaa33e8e9ce36"
+                                               },
+                                               {
+                                                   "key":  "training.git.dirty",
+                                                   "value":  "true"
+                                               },
+                                               {
+                                                   "key":  "mlflow.runName",
+                                                   "value":  "word-20261115T135637200430Z-3cf3ebd847df48c3b74b2c76b5f9d97d"
+                                               }
+                                           ]
+                              },
+                     "inputs":  {
+
+                                },
+                     "outputs":  {
+
+                                 }
+                 },
+                 {
+                     "info":  {
+                                  "run_uuid":  "ea6666a03f814d35bd35588a7edf6a09",
+                                  "experiment_id":  "2",
+                                  "run_name":  "alphabet-20261115T132733529997Z-2c074386aecd4052bdfb0f02e7e7f6ca",
+                                  "user_id":  "Hassaan Zafar",
+                                  "status":  "FINISHED",
+                                  "start_time":  1794749257354,
+                                  "end_time":  1794750511416,
+                                  "artifact_uri":  "file:///E:/LinguaSign/backend/mlartifacts/2/ea6666a03f814d35bd35588a7edf6a09/artifacts",
+                                  "lifecycle_stage":  "active",
+                                  "run_id":  "ea6666a03f814d35bd35588a7edf6a09"
+                              },
+                     "data":  {
+                                  "metrics":  [
+                                                  {
+                                                      "key":  "loss",
+                                                      "value":  0.12892398238182068,
+                                                      "timestamp":  1794750374652,
+                                                      "step":  25
+                                                  },
+                                                  {
+                                                      "key":  "accuracy",
+                                                      "value":  0.9593186974525452,
+                                                      "timestamp":  1794750374652,
+                                                      "step":  25
+                                                  },
+                                                  {
+                                                      "key":  "val_loss",
+                                                      "value":  0.07069772481918335,
+                                                      "timestamp":  1794750374652,
+                                                      "step":  25
+                                                  },
+                                                  {
+                                                      "key":  "val_accuracy",
+                                                      "value":  0.9833876490592957,
+                                                      "timestamp":  1794750374652,
+                                                      "step":  25
+                                                  },
+                                                  {
+                                                      "key":  "test_loss",
+                                                      "value":  0.05322132259607315,
+                                                      "timestamp":  1794750376108,
+                                                      "step":  0
+                                                  },
+                                                  {
+                                                      "key":  "test_accuracy",
+                                                      "value":  0.9837398529052734,
+                                                      "timestamp":  1794750376108,
+                                                      "step":  0
+                                                  }
+                                              ],
+                                  "params":  [
+                                                 {
+                                                     "key":  "dataset.source",
+                                                     "value":  "main_dataset.db"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.table",
+                                                     "value":  "alphabetDataset"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.samples",
+                                                     "value":  "15363"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.features",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.class_count",
+                                                     "value":  "37"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.sha256",
+                                                     "value":  "b2cdba55ac99729271efdb76603bd1ef30de05c59d813e5c57f2565663256ebd"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.fingerprint_method",
+                                                     "value":  "sha256-ordered-json-feature-label-rows-v1"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.train_samples",
+                                                     "value":  "9218"
+                                                 },
+                                                 {
+                                                     "key":  "dataset.test_samples",
+                                                     "value":  "3075"
+                                                 },
+                                                 {
+                                                     "key":  "model_name",
+                                                     "value":  "alphabet"
+                                                 },
+                                                 {
+                                                     "key":  "architecture",
+                                                     "value":  "[{\"type\":\"Dense\",\"units\":120,\"activation\":\"relu\"},{\"type\":\"Dropout\",\"rate\":0.3},{\"type\":\"Dense\",\"units\":64,\"activation\":\"relu\"},{\"type\":\"Dropout\",\"rate\":0.3},{\"type\":\"Dense\",\"units\":37,\"activation\":\"softmax\"}]"
+                                                 },
+                                                 {
+                                                     "key":  "epochs",
+                                                     "value":  "25"
+                                                 },
+                                                 {
+                                                     "key":  "batch_size",
+                                                     "value":  "1"
+                                                 },
+                                                 {
+                                                     "key":  "learning_rate",
+                                                     "value":  "0.0010000000474974513"
+                                                 },
+                                                 {
+                                                     "key":  "optimizer",
+                                                     "value":  "Adam"
+                                                 },
+                                                 {
+                                                     "key":  "test_size",
+                                                     "value":  "0.2"
+                                                 },
+                                                 {
+                                                     "key":  "validation_size",
+                                                     "value":  "0.2"
+                                                 },
+                                                 {
+                                                     "key":  "split_random_state",
+                                                     "value":  "42"
+                                                 },
+                                                 {
+                                                     "key":  "duplicate_disjoint",
+                                                     "value":  "True"
+                                                 }
+                                             ],
+                                  "tags":  [
+                                               {
+                                                   "key":  "mlflow.user",
+                                                   "value":  "Hassaan Zafar"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.name",
+                                                   "value":  "backend\\PSL\\alphabet_recognition\\train_alphabet_model.py"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.type",
+                                                   "value":  "LOCAL"
+                                               },
+                                               {
+                                                   "key":  "mlflow.source.git.commit",
+                                                   "value":  "44ddf43c0625ce8ab0161b52651aaa33e8e9ce36"
+                                               },
+                                               {
+                                                   "key":  "model.name",
+                                                   "value":  "alphabet"
+                                               },
+                                               {
+                                                   "key":  "training.performed",
+                                                   "value":  "true"
+                                               },
+                                               {
+                                                   "key":  "training.git.commit",
+                                                   "value":  "44ddf43c0625ce8ab0161b52651aaa33e8e9ce36"
+                                               },
+                                               {
+                                                   "key":  "training.git.dirty",
+                                                   "value":  "true"
+                                               },
+                                               {
+                                                   "key":  "mlflow.runName",
+                                                   "value":  "alphabet-20261115T132733529997Z-2c074386aecd4052bdfb0f02e7e7f6ca"
+                                               }
+                                           ]
+                              },
+                     "inputs":  {
+
+                                },
+                     "outputs":  {
+
+                                 }
+                 }
+             ]
+}

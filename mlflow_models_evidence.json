@@ -1,0 +1,42 @@
+{
+    "registered_models":  [
+                              {
+                                  "name":  "SignVision-Alphabet",
+                                  "creation_timestamp":  1794751242221,
+                                  "last_updated_timestamp":  1794751242501,
+                                  "latest_versions":  [
+                                                          {
+                                                              "name":  "SignVision-Alphabet",
+                                                              "version":  "1",
+                                                              "creation_timestamp":  1794751242501,
+                                                              "last_updated_timestamp":  1794751242501,
+                                                              "current_stage":  "None",
+                                                              "description":  "",
+                                                              "source":  "file:///E:/LinguaSign/backend/mlartifacts/2/ea6666a03f814d35bd35588a7edf6a09/artifacts/training/alphabet_model.h5",
+                                                              "run_id":  "ea6666a03f814d35bd35588a7edf6a09",
+                                                              "status":  "READY",
+                                                              "run_link":  ""
+                                                          }
+                                                      ]
+                              },
+                              {
+                                  "name":  "SignVision-Word",
+                                  "creation_timestamp":  1794751305791,
+                                  "last_updated_timestamp":  1794751306040,
+                                  "latest_versions":  [
+                                                          {
+                                                              "name":  "SignVision-Word",
+                                                              "version":  "1",
+                                                              "creation_timestamp":  1794751306040,
+                                                              "last_updated_timestamp":  1794751306040,
+                                                              "current_stage":  "None",
+                                                              "description":  "",
+                                                              "source":  "file:///E:/LinguaSign/backend/mlartifacts/2/89a7c4b32367407e84f6ed7d85462a76/artifacts/training/word_model.h5",
+                                                              "run_id":  "89a7c4b32367407e84f6ed7d85462a76",
+                                                              "status":  "READY",
+                                                              "run_link":  ""
+                                                          }
+                                                      ]
+                              }
+                          ]
+}
