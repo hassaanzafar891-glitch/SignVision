@@ -11,7 +11,18 @@ partition evidence linking those partitions to the production artifact bundles.
 There are no production provenance manifests. The evaluator fails before loading
 models in this situation. It does not treat old accuracy values, RF split files,
 or a freshly generated seed-42 split as proof of the production models' holdout.
-A successful GitHub workflow run has not been performed.
+Basic CI passed for commit `0529f483871746d5929aed6983bcc579922e0921`
+([recorded run](https://github.com/hassaanzafar891-glitch/SignVision/actions/runs/44162305872));
+the manual candidate-approval job was skipped. A successful real-model approval
+run has not been performed. See [FINAL_READINESS.md](FINAL_READINESS.md) for the
+demo checklist and the distinction between CI success and promotion eligibility.
+
+The operator's final confirmation that DVC cache/remote synchronization, the live
+AWS application and monitoring work does not change this gate decision. Dataset
+availability and operational inference do not establish original held-out row
+membership. No validated production-versus-candidate comparison, model promotion
+or measured drift is claimed. Documentation publication does not bypass the gate
+or trigger deployment.
 
 ## Gate policy
 

@@ -1,14 +1,30 @@
-# SignVision: Phase 1 MLOps for Pakistan Sign Language
+# SignVision: MLOps for Pakistan Sign Language
 
 [![SignVision CI](https://github.com/hassaanzafar891-glitch/SignVision/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/hassaanzafar891-glitch/SignVision/actions/workflows/frontend-ci.yml)
 
 SignVision is an MLOps course project for alphabet and word recognition from
-42 hand-landmark features. Phase 1 focuses on validated data, reproducible
-partitioning, tracked experiments, classical baselines and automated verification.
+42 hand-landmark features. It extends the existing application with validated
+data, reproducible partitioning, tracked experiments, classical baselines, CI,
+private inference monitoring and controlled, versioned candidate training.
 
 - **GitHub:** [hassaanzafar891-glitch/SignVision](https://github.com/hassaanzafar891-glitch/SignVision)
 - **DagsHub:** [hassaanzafar891-glitch/SignVision](https://dagshub.com/hassaanzafar891-glitch/SignVision)
 - **Setup and commands:** [HOW_TO_RUN.md](HOW_TO_RUN.md)
+
+## Final submission status
+
+On 18 November 2026, the operator confirmed that the live AWS application and
+monitoring work, and supplied the DVC result: `Cache and remote origin are in sync.`
+These are operator-verified results; this documentation update did not access AWS
+or rerun remote verification. Basic GitHub CI previously passed for `0529f48`;
+see [CI evidence](docs/CI.md) for the exact run and its limits.
+
+The controlled-retraining candidate was verified read-only. **Original production
+holdout provenance is UNAVAILABLE, and production model promotion is BLOCKED.**
+There is no validated production-versus-candidate comparison, legitimate drift
+reference or measured-drift claim. Promotion/rollback tools create plans only.
+See the [final checklist and demo](docs/FINAL_READINESS.md) and
+[detailed evidence](docs/PHASE4_READINESS.md).
 
 ## Phase 1 implementation
 
@@ -36,7 +52,7 @@ It contains `alphabetDataset` (15,363 rows, 37 classes) and `wordDataset`
 `id` is excluded from model features.
 
 The application and supplied processed data come from the upstream project
-credited under [Source attribution and license](#source-attribution-and-license).
+credited under [Project Attribution and License](#project-attribution-and-license).
 Original raw images/videos are private and unavailable in this submission.
 Reproduction begins with processed data; the original media extraction and signer
 provenance cannot be independently reconstructed from this repository.
@@ -48,7 +64,7 @@ can be formed. These checks do not prove that labels are semantically correct.
 
 ## Models and evaluation
 
-Both neural trainers and the RF baseline use approximately **60% training, 20%
+The current neural trainers and RF baseline use approximately **60% training, 20%
 validation and 20% testing**. Identical feature vectors stay in one partition;
 actual row ratios vary with duplicate-group sizes. For unchanged ordered input,
 splitting is reproducible. Neural weights are not guaranteed bit-identical.
@@ -62,7 +78,9 @@ Signer IDs are unavailable, so these are **not signer-independent evaluations**.
 | Word RF | Same fixed RF settings | 99.0385% |
 
 These are existing experiment results, not new measurements from this documentation
-update. Historical NN partition-index hashes are unavailable, so NN/RF comparisons
+update. The NN scores and registered v1 models belong to November 15 training runs
+whose model hashes differ from production; they are not verified production-model
+scores. Historical NN partition-index hashes are unavailable, so NN/RF comparisons
 are **indicative only**. The word RF validation accuracy is 88.6364%, versus
 99.0385% test accuracy, a 10.4021 percentage-point gap. Small sample size and
 partition-dependent performance limit generalization claims. RF test macro F1
@@ -95,17 +113,20 @@ actual retraining was not performed during Phase 1 verification.
 
 ## Tracking, registry and verification limits
 
-Local experiments use `backend/mlflow.db` and `backend/mlartifacts/`; the older
-`backend/mlruns/` store remains separate. MLflow client dependencies are in
+November 15 experiments use `backend/mlflow.db` and `backend/mlartifacts/`;
+the completed November 17 controlled candidate uses root `mlflow.db` and
+`mlartifacts/`. The older `backend/mlruns/` import store remains separate.
+MLflow client dependencies are in
 `backend/requirements-tracking.txt`, separate from inference dependencies.
 
 Phase 1 verification found `SignVision-Alphabet` v1 and `SignVision-Word` v1 both
 READY, with existing `.h5` source files. Those sources lack `MLmodel` flavor
 manifests, so catalog registration does not establish MLflow serving readiness.
-NN logging is best effort; inspect local `tracking_errors` for failed uploads.
+Legacy NN logging is best effort; inspect local `tracking_errors` for failed
+uploads. Controlled candidate completion requires successful tracking.
 
-The latest Phase 1 backend verification passed **42 tests**. A dependency-free CI
-run passed 38 with four expected dependency-related skips. Tests cover invalid
+The last recorded full backend verification passed **101 tests**. A dependency-free
+run passed 95 with six expected dependency-related skips. Tests cover invalid
 and corrupted data, split separation, train-only scaling, mocked RF fitting,
 temporary MLflow storage and workflow orchestration. They do not establish
 real-world recognition accuracy or deployment readiness.
@@ -124,6 +145,7 @@ missing authentic historical holdout provenance. No automatic deployment is adde
 - `frontend/`: Next.js application; Python training uses a separate environment.
 - [HOW_TO_RUN.md](HOW_TO_RUN.md): PowerShell setup, DVC, tracking, training and application commands.
 - [docs/CI.md](docs/CI.md): CI scope and limitations.
+- [docs/FINAL_READINESS.md](docs/FINAL_READINESS.md): Option 2 checklist, demo and evidence inventory, including operator-only checks and promotion blockers.
 - [docs/BROWSER_CAMERA_DOCKER.md](docs/BROWSER_CAMERA_DOCKER.md): browser-camera and Docker notes.
 
 ## Project Attribution and License

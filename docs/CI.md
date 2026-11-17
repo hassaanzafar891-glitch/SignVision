@@ -90,9 +90,22 @@ or Docker runtime behavior. There is no frontend browser/unit-test suite configu
 in `package.json`; lint and type checking provide the frontend coverage here.
 ESLint warnings remain warnings; errors fail CI.
 
-All required tests and tracking helpers must be committed in a future reviewed
-commit before GitHub can execute them; untracked local files are not uploaded by
-the workflow. No commit or push is part of this implementation.
+The implemented Phase 4 source/tests were published in commit
+`0529f483871746d5929aed6983bcc579922e0921`. The recorded
+[GitHub run 44162305872](https://github.com/hassaanzafar891-glitch/SignVision/actions/runs/44162305872)
+passed backend and frontend checks; manual candidate approval was skipped on the
+push event. This is not a successful real-model gate or deployment. Later local
+documentation changes are not part of that run. Untracked runtime files are not
+uploaded automatically. The final documentation revision needs its own
+commit-specific CI result; check the [Actions page](https://github.com/hassaanzafar891-glitch/SignVision/actions)
+for that revision instead of reusing the older run's success. See
+[FINAL_READINESS.md](FINAL_READINESS.md).
+
+The operator separately confirms that the live AWS application/monitoring work
+and DVC reports cache/remote synchronization. Those checks were not performed by
+CI and do not validate original production holdouts, candidate promotion or
+measured drift. Publishing documentation triggers basic CI only; the workflow
+does not deploy or retrain on a push.
 
 Local workflow validation uses an already available YAML parser plus assertions
 for events, branch filters, permissions, concurrency, runtimes, timeouts, commands,

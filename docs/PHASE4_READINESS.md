@@ -4,9 +4,34 @@ This review reuses the existing monitoring, controlled retraining, versioned
 bundles, evaluator and plan-only promotion/rollback utilities. No new training,
 deployment automation, dependencies or gate policy is introduced.
 
+**Historical production holdout conclusion (18 November 2026): UNAVAILABLE for
+both alphabet and word.** Exact local artifact and historical dataset snapshots
+were recovered, but no authentic original partition membership was found. This
+does not permit promotion against the verified controlled-retraining candidate.
+
+For the final Option 2 checklist, evidence inventory, demo procedure and operator
+checks, see [FINAL_READINESS.md](FINAL_READINESS.md). It preserves these blockers
+and does not authorize training, policy changes or deployment.
+
+## Final operator confirmations (18 November 2026)
+
+The operator reports successful DVC remote verification with
+`Cache and remote origin are in sync.`, and confirms the live AWS application
+and monitoring work. These are operator-verified functional/synchronization
+results, not independent AWS checks by the documentation editor. No screenshots,
+raw transcripts, live artifact hashes or measured-drift results were supplied
+with this confirmation. The previous basic CI success remains recorded below
+and in [CI.md](CI.md).
+
+Successful synchronization and live functionality do not recover original model
+holdouts, validate a production-versus-candidate comparison, create a legitimate
+drift reference or authorize promotion. The UNAVAILABLE/BLOCKED conclusions above
+are unchanged. No new training, dataset collection or deployment is required to
+present the existing evidence accurately.
+
 | Area | Verified locally | Remaining requirement |
 | --- | --- | --- |
-| Drift | Bounded authenticated aggregates, JS-divergence tests, invalid/missing references fail closed | Representative, reviewed production aggregate reference for the exact deployed model/scaler/encoder bundle; no legitimate baseline is supplied here. |
+| Drift | Bounded authenticated aggregates, JS-divergence tests and fail-closed reference checks; live monitoring functionality operator-confirmed | Representative, reviewed production aggregate reference for the exact deployed model/scaler/encoder bundle; no legitimate baseline or measured drift is supplied here. |
 | Retraining | Existing 17 November controlled run completed both tasks; local MLflow task/audit records and uploaded artifacts verified read-only on 18 November | Independent provenance review and evidence-backed evaluation; no repeat training is needed for capture verification. |
 | Candidate verification | Existing read-only command passed; all 11 listed files, receipt, manifest, metadata and exact recorded splits verified | Capture remains unreviewed; local consistency checks do not constitute independent approval or authenticate remote storage. |
 | Evaluation | Exact-dataset, partition, artifact and regression checks remain enforced | Authentic production training-time manifests, independently reviewed manifest pins, and identical held-out test indices. Production manifests are currently missing. |
@@ -117,6 +142,139 @@ provenance statuses remain `captured_training_time_unreviewed`. Production holdo
 evidence, independent review, a legitimate drift reference and live deployment
 identity remain separate blockers; promotion/rollback eligibility is not granted.
 
+## Historical production provenance investigation (18 November 2026)
+
+### Recovered artifact and dataset lineage
+
+Git commit `a298fb909fa34020a7bc8121a7cd2874db14ada5` (18 May 2026) contains all
+six current `backend/data/models/` model/scaler/encoder files **byte-for-byte**,
+and `backend/data/db/main_dataset.db` with the same raw SHA-256 and DVC MD5
+recorded above (6,864,896 bytes). Co-commitment establishes a historical snapshot,
+not proof that those rows or partitions were actually consumed by training.
+
+Production artifact SHA-256 identities checked:
+
+| Task | Model | Scaler | Label encoder |
+| --- | --- | --- | --- |
+| Alphabet | `8755d6bc3328edc98c2eeec595817463ea47e6e6d519c2e347c5e9f8806f6371` | `5d7a5f3e22577eea4724e5021d33d2ee379d72e0e36b4942eea0e942ae8789d7` | `046396fb488f14c943a3aa780de21a072114df97dc65e8e85c325fdab11b2fb2` |
+| Word | `83c32bc5a01b4e67f27c3077822a2406a8b944ccd356076982aaaefea62fc028` | `b32f4e16d9cb9e9fb856bd028bb311f6de300187407735116e51f3255ed684e2` | `dea9b1af201b33fc0a05f43762145c866120d65842d8aa2cbe61bf6e3fc90f72` |
+
+The matching baseline-import manifests are:
+
+- Alphabet: `backend/mlruns/435313127739737787/9593a88170af42a196d4d9ce13ad1eb1/artifacts/baseline/manifest.json`;
+  import run `9593a88170af42a196d4d9ce13ad1eb1`.
+- Word: `backend/mlruns/435313127739737787/5e06dd6076544f5b9894285ecb2e0ebf/artifacts/baseline/manifest.json`;
+  import run `5e06dd6076544f5b9894285ecb2e0ebf`.
+
+Both bind the exact production model/scaler/encoder hashes, but explicitly state
+`historical_training_provenance_verified: false`, no historical metrics, and
+`configuration_provenance: current_script_configuration`. They are later imports,
+not original training runs. The saved backup under
+`E:\SignVision_Backup\phase4-20261114T184933686Z-8dd81a1f\` has the same import
+manifests and dataset MD5; it supplies no missing original splits.
+
+The DVC pointer was introduced in available Git history by
+`d2931636117e2a6fcb40ec028e3a881ccfc5d855` and
+`d10b15499e86fd40fbcbe05f28e4f5a53a42d026` (14/15 November). Both record
+`326d65539174dffdad54606bb2271e3c`. No alternate pointer version or DVC training
+pipeline/lock binding these production models to a split was found. DVC data
+identity alone does not establish model-training provenance.
+
+### Why the other records do not recover the original holdout
+
+- At the May commit, `backend/PSL/alphabet_recognition/train_alphabet_model.py`
+  uses `train_test_split(..., test_size=0.2)` without a seed, followed by
+  `validation_split=0.20`. No selected indices or RNG state are saved. The saved
+  scaler is fitted before that internal validation split. These are source-code
+  observations, not verified historical execution claims.
+- The co-committed word script uses stratified `train_test_split` with seed 42,
+  then `validation_data=(X_test, y_test)` and evaluates on the same rows. If this
+  script produced the model, that test was reused for validation, rather than
+  untouched. A deterministic reconstruction still depends on unverified execution,
+  row order and library versions; it must not be labeled original evidence.
+- Read-only HDF5 inspection found Keras 2.13.1 architecture/training configuration,
+  weights and optimizer state, but no split/dataset attributes or partition
+  records. Static pickle inspection found scaler statistics/sample-count fields,
+  not row membership. No models were loaded for inference or pickles executed.
+  Weights, scaler moments, sample counts and confusion-matrix images cannot
+  authenticate the original held-out rows.
+- Current database tables have 44 columns (id, 42 features, label), with no
+  split, signer or session fields. The available backend Git object history has
+  no saved original index arrays, split manifests or notebooks containing them.
+- November 15 neural metadata has dataset fingerprints, seed/settings, counts
+  and scores, but no exact partition lists. More decisively, its model hashes
+  differ from production. The READY Registry versions point to these newer
+  artifacts, not the production files:
+
+| Registry version / task | November 15 training run | Saved model SHA-256 |
+| --- | --- | --- |
+| `SignVision-Alphabet` v1 | `ea6666a03f814d35bd35588a7edf6a09` | `da24fa5658c4d89bd916fb727dbf89443c6454bfdf63e739e09c910393ba01bc` |
+| `SignVision-Word` v1 | `89a7c4b32367407e84f6ed7d85462a76` | `62d3cbe6c05050c411738a48f9bb62997168582adc96b462d7007ba20242c703` |
+
+Their exact metadata files are
+`backend/mlartifacts/2/<run-id>/artifacts/training/run_metadata.json`, with matching
+local copies under `backend/data/training_runs/<task>/<November-15-run-directory>/`.
+The 98.37%/100% documented scores belong to these runs, not verified measurements
+of the production hashes above. `mlflow_runs_evidence.json` and
+`mlflow_models_evidence.json`, added in commit
+`221af54b166779023dc16b4edd39e5c49631f55f`, confirm those run/source links but
+contain no original partition fields.
+
+RF `splits.json` records under `backend/data/training_runs/random_forest/` apply
+to the RF baselines. The November 17 candidate's actual partition records and
+run IDs are documented above and apply to its distinct model hashes. Neither
+can retrospectively establish production splits. No production
+`alphabet_provenance.json` or `word_provenance.json` exists.
+
+**Comparison decision:** the existing gate cannot legitimately approve a
+production-versus-candidate comparison on the current dataset. Same bytes for a
+historical dataset, matching labels or a reconstructed seed do not prove a common
+unseen holdout. Live EC2 artifact identity also remains unverified; this read-only
+local investigation did not contact AWS. Even a later live-hash match would not
+recover the missing holdout.
+
+Search scope: all currently available local Git refs/history, production H5 and
+preprocessing files, current DVC pointer/history, both local SQL stores, the file
+MLflow store, saved training/RF/candidate artifacts, tracked evidence JSON,
+documentation and the existing backup. Remote-only/unfetched history, private
+original logs/media and unmirrored DagsHub runs were not accessed. Additional
+authentic external records could change the conclusion; none were fabricated.
+
+### Scientifically valid alternative (recommendation, not implemented)
+
+Use a **new prospective external evaluation set** collected after freezing both
+bundles, with documented provenance and independently checked PSL labels. Include
+all supported alphabet/word classes and representative camera, lighting and
+session conditions. Retain consent and privacy controls; collect pseudonymous
+participant/session identifiers for grouping, not public user identities.
+Historical signer IDs are unavailable, so do not claim proven signer independence
+from the production training population.
+
+Freeze and hash both six-file bundles before collection. Keep the new evaluation
+set entirely out of training, scaler/encoder fitting, validation, threshold tuning
+and model selection. Check overlap/exact duplicates against all available old
+data, group correlated frames by recording/session, and document the residual
+unknown historical overlap. Do not select rows from the current database and call
+them newly unseen. Predeclare class coverage, sample-size/precision targets,
+metrics and the decision rule; do not collect until a desired score is reached.
+
+Evaluate both unchanged models on the same new examples with their own saved
+preprocessing and a reviewed consistent extraction protocol. Report accuracy,
+macro F1, per-class recall/confusion matrices and paired uncertainty estimates
+using independent sessions/participants as sampling units, rather than treating
+video frames as independent. Distinguish landmark classification from end-to-end
+browser/MediaPipe performance. No retraining is needed to compare frozen models
+on that genuinely new set, and no result is claimed here.
+
+This would be a **new evaluation protocol**, not recovered historical provenance.
+It requires independent approval and a versioned gate/schema/policy revision
+because today's gate pins the old DVC dataset and original training-time test
+indices. Record external-set identity, group assignments, artifact hashes and
+protocol version in new evidence. Do not weaken or silently bypass the current
+gate, replace production, create reviewed historical manifests, or use the
+candidate's existing test set as a substitute. Until authentic original evidence
+or an explicitly approved alternative protocol exists, promotion stays blocked.
+
 ## Evidence needed before proceeding
 
 1. Through a separately authorized operator process, collect and review a
@@ -139,8 +297,10 @@ identity remain separate blockers; promotion/rollback eligibility is not granted
    identity, approve the change, stage the entire six-file bundle, and plan health
    checks and a coordinated rollback. Do not hot-swap individual model/scaler files.
 
-Local checks do not verify EC2 identity, throughput, live monitoring access,
-operational alerts, hosted CI, DagsHub availability or production rollback. The
+Local checks alone do not verify EC2 artifact identity, throughput, live access,
+operational alerts, DagsHub availability or production rollback. The operator's
+successful live-application/monitoring and DVC sync checks are recorded separately
+above; previous hosted CI success is linked in the final checklist. The local
 verification work did not access AWS, change the live deployment, restart Docker
 or alter credentials. Publishing reviewed source changes is separate from model
 approval or deployment. Existing CI discovers the tests without heavy dependencies.
