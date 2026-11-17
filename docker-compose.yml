@@ -3,13 +3,13 @@ services:
     build: ./backend
     platform: linux/amd64
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      ALLOWED_ORIGINS: https://signvision-demo.duckdns.org
     volumes:
       - speech-cache:/app/data/tts_cache
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -18,15 +18,15 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: https://signvision-demo.duckdns.org
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       AUTH_SECRET: ${AUTH_SECRET:-}
       AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:-}
       AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:-}
       AUTH_TRUST_HOST: "true"
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: https://signvision-demo.duckdns.org
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
     volumes:
       - frontend-data:/app/backend/data
