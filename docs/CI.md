@@ -1,7 +1,8 @@
 # SignVision CI
 
-The existing `.github/workflows/frontend-ci.yml` now defines **SignVision CI**
-with two independent jobs. The filename is retained to avoid a duplicate workflow.
+The existing `.github/workflows/frontend-ci.yml` defines **SignVision CI**
+with two independent basic jobs plus an opt-in manual candidate-approval job.
+The filename is retained to avoid a duplicate workflow.
 
 | Job | Runtime | Checks | Timeout |
 | --- | --- | --- | --- |
@@ -18,9 +19,14 @@ with two independent jobs. The filename is retained to avoid a duplicate workflo
 - A newer run cancels the previous run for the same workflow/event and PR or
   branch. Push and pull-request runs have separate concurrency groups.
 
-No AWS, DagsHub, authentication, or payment secrets are required. There is no
-training, deployment, Docker build, DVC pull/push, or experiment upload step.
-Phase 2/3/4 application, model, dataset, and DVC configuration files are unchanged.
+No AWS, DagsHub, authentication, or payment secrets are required for the basic
+checks. They do not train, deploy, build Docker images or retrieve DVC data.
+The manual `candidate_approval` job uses DagsHub read credentials and installs
+evaluation dependencies only after evidence preflight succeeds. It requires
+both task gates before uploading approval evidence, and never deploys. See
+[EVALUATION_GATE.md](EVALUATION_GATE.md) for prerequisites, provenance requirements,
+GitHub environment configuration and the current blocked production-evidence state.
+Application/model files and existing DVC configuration are unchanged.
 
 ## Backend checks
 
@@ -28,7 +34,7 @@ Commands run from the repository root:
 
 ```powershell
 python -m unittest discover -s backend/tests -p "test_*.py" -v
-python -m compileall -q backend
+python -m compileall -q -x '(^|[\\/])(data|mlruns|mlartifacts)([\\/]|$)' backend
 ```
 
 The Python job installs no project dependencies. Camera handling is tested with
@@ -38,7 +44,9 @@ executing training. Tests use temporary fixtures, not production datasets/models
 The optional real MLflow round-trip test skips when MLflow is absent.
 
 `smoke_browser_camera.py` does not match `test_*.py` and is deliberately excluded.
-Compilation checks syntax without importing or executing the training modules.
+Compilation checks syntax without importing or executing the training modules,
+and excludes runtime data and MLflow stores (whose tag filenames may end in `.py`
+while containing a checksum rather than Python source).
 Tracking is explicitly disabled in the backend job.
 
 ## Frontend checks
