@@ -112,6 +112,11 @@ real-world recognition accuracy or deployment readiness.
 
 ## Repository guide
 
+Controlled neural retraining, versioned candidate bundles and manual promotion/
+rollback **plans** are documented in [RETRAINING.md](docs/RETRAINING.md).
+Training requires an explicit action; production promotion remains blocked by
+missing authentic historical holdout provenance. No automatic deployment is added.
+
 - `backend/tracking/`: validation, partitioning, tracking, baseline and workflow tools.
 - `backend/PSL/`: neural training and inference modules.
 - `backend/data/models/`: existing production model/scaler/encoder artifacts.

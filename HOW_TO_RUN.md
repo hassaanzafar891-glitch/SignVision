@@ -2,7 +2,11 @@
 
 Use PowerShell. Training, MLflow and application inference are separate processes.
 This guide covers the MLOps workflow; source attribution and licensing are in
-[README.md](README.md#source-attribution-and-license).
+[README.md](README.md#project-attribution-and-license).
+
+For controlled future neural retraining, frozen provenance, candidate versions
+and manual promotion/rollback plans, use [RETRAINING.md](docs/RETRAINING.md).
+That procedure is explicitly triggered; it does not replace production artifacts.
 
 Commands are code-verified against the scripts and CLI options. Validation and
 tests were executed during Phase 1 verification; setup/downloads, application

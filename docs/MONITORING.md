@@ -141,6 +141,8 @@ test or confidence calibration here. Threshold 0.1 is a configurable starting
 point, not a calibrated production guarantee. Calibrate thresholds/window sizes
 using legitimate reviewed traffic and account for correlated successive frames.
 No alert automatically retrains, approves or deploys a model.
+An operator can investigate an alert and separately follow the
+[controlled retraining procedure](RETRAINING.md); monitoring never invokes it.
 
 ## Deployment considerations (not applied)
 

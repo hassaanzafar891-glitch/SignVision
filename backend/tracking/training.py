@@ -4,6 +4,7 @@ This module has no TensorFlow, NumPy, or MLflow import-time dependencies.
 """
 
 from collections import Counter
+from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
 import importlib
@@ -19,6 +20,7 @@ from tracking.import_baselines import BACKEND, git_metadata, sha256, tracking_ur
 
 DAGSHUB_TRACKING_URI = "https://dagshub.com/hassaanzafar891-glitch/SignVision.mlflow"
 EPOCH_METRICS = ("accuracy", "val_accuracy", "loss", "val_loss")
+CONTROLLED_SESSION = ContextVar("controlled_training_session", default=None)
 
 
 def json_value(value):
@@ -128,7 +130,31 @@ class TrainingRun:
                 self.metadata["mlflow_run_id"] = active.info.run_id
             except Exception as error:
                 self._tracking_error("initialization", error)
+        session = CONTROLLED_SESSION.get()
+        if session is not None:
+            try:
+                if self.client is None or self.metadata["tracking_errors"] or not self.owns_run:
+                    raise RuntimeError("Controlled retraining requires a new working MLflow run")
+                session.started(self)
+            except BaseException:
+                self.metadata["training_status"] = "FAILED"
+                if self.owns_run:
+                    try:
+                        self.client.end_run(status="FAILED")
+                    except Exception as error:
+                        self._tracking_error("end_run", error)
+                self._save_metadata()
+                raise
         return self
+
+    def record_partitions(self, features, labels, train, validation, test):
+        """Capture actual indices before fitting; controlled runs check the frozen plan."""
+        partitions = {name: [int(index) for index in indices] for name, indices in (
+            ("train", train), ("validation", validation), ("test", test))}
+        self.metadata["partitions"] = partitions
+        session = CONTROLLED_SESSION.get()
+        if session is not None:
+            session.partitions(self, features, labels, partitions)
 
     def log_params(self, params):
         self.metadata["params"].update(params)
@@ -192,17 +218,24 @@ class TrainingRun:
 
     def __exit__(self, exception_type, exception, traceback):
         self.metadata["training_status"] = "FAILED" if exception_type else "FINISHED"
+        self.metadata["finished_at_utc"] = datetime.now(timezone.utc).isoformat()
         try:
+            session = CONTROLLED_SESSION.get()
+            if session is not None and exception_type is None:
+                session.finished(self)
             self.metadata["artifacts"] = {
                 path.name: {"sha256": sha256(path), "size_bytes": path.stat().st_size}
                 for path in self.output_dir.iterdir() if path.is_file()
             }
             self._save_metadata()
             self._send("log_artifacts", str(self.output_dir), artifact_path="training")
+        except BaseException:
+            self.metadata["training_status"] = "FAILED"
+            raise
         finally:
             if self.owns_run:
                 try:
-                    self.client.end_run(status="FAILED" if exception_type or
+                    self.client.end_run(status="FAILED" if self.metadata["training_status"] == "FAILED" or
                                          self.metadata["tracking_errors"] else "FINISHED")
                 except Exception as error:
                     self._tracking_error("end_run", error)

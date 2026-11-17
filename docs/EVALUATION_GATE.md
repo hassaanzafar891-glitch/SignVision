@@ -39,6 +39,11 @@ In CI, records must come from the trusted evaluator and reviewed artifact eviden
 
 ## Required training-time provenance
 
+For future traceable candidates, see [controlled retraining and versioned change
+plans](RETRAINING.md). Capture is initially unreviewed and does not establish
+historical production provenance. Promotion and rollback utilities only create
+operator-reviewed plans; they never replace serving files or relax this gate.
+
 Each trusted model bundle contains the unchanged files:
 
 ```text
@@ -194,9 +199,8 @@ exercise metric validation/regression, artifact/dataset/partition mismatch,
 leakage, saved-scaler transform-only behavior and all-or-nothing approval. No
 real model is trained, no DVC download is performed, and no live server is needed.
 
-The inspected local branch is `feature/browser-camera`; `feature/mlops-phase2`
-was not present in the local/remote-tracking branch listing. Branch equivalence
-with AWS is not established. Review and synchronize the new evaluation modules,
+The current local branch is `feature/mlops-phase2`. Branch equivalence with AWS
+is not established. Review and synchronize the evaluation and lifecycle modules,
 tests, evaluation requirements and docs into the development branch through a
 normal reviewed change. The workflow belongs in GitHub's reviewed `main` branch.
 Do not overwrite AWS-only Compose/Caddy changes, alter localhost port bindings,

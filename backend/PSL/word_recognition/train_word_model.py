@@ -59,6 +59,7 @@ def _train_words(run):
     label_cat = to_categorical(label_encoded, num_classes=num_classes)
 
     train_idx, val_idx, test_idx = split_three_way(features, labels)
+    run.record_partitions(features, labels, train_idx, val_idx, test_idx)
     X = np.asarray(features, dtype=np.float64)
     X_train, X_val, X_test = X[train_idx], X[val_idx], X[test_idx]
     y_train, y_val, y_test = label_cat[train_idx], label_cat[val_idx], label_cat[test_idx]

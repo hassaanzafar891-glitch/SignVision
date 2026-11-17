@@ -168,11 +168,12 @@ available even with tracking disabled. Remote uploads are best effort: local
 metadata records upload/end-run failures, and a partial remote run is not evidence
 of a successful complete upload.
 
-Architectures and preprocessing are unchanged. Alphabet retains its unseeded 80/20
-train/test split and 20% validation split within training. Word retains its
-stratified 80/20 split with `random_state=42` and still uses its test set as
-validation data. Its test score is therefore not an independent holdout result;
-this task deliberately preserves that methodology.
+Architectures and preprocessing are unchanged. Both current neural trainers use
+the seed-42 duplicate-disjoint `split_three_way()` (approximately 60/20/20), separate
+validation/test rows, and scalers fitted only on training features. This does not
+verify historical partitions for existing production artifacts. For explicit
+future retraining with frozen indices, strict tracking completion, versioned
+bundles and separate evidence review, see [RETRAINING.md](RETRAINING.md).
 
 ### Safe tests for the training integration
 

@@ -78,6 +78,12 @@ The workflow adds no frontend scripts and does not change application behavior.
 
 ## Limitations and verification
 
+Discovery also includes `test_controlled_retraining.py`: synthetic frozen plans,
+fake trainers/tracking, bundle tampering, evidence-backed promotion and pinned
+rollback plans. No training or lifecycle executor is added to any workflow.
+See [RETRAINING.md](RETRAINING.md). Candidate approval remains manual and blocked
+until authentic production holdout evidence is established.
+
 These checks do not establish webcam recognition accuracy, real TensorFlow/
 MediaPipe compatibility, real MLflow/DagsHub connectivity, production build success,
 or Docker runtime behavior. There is no frontend browser/unit-test suite configured
