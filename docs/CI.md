@@ -43,6 +43,12 @@ fake models and MLflow clients; trainer contract checks inspect syntax without
 executing training. Tests use temporary fixtures, not production datasets/models.
 The optional real MLflow round-trip test skips when MLflow is absent.
 
+The same discovery includes `test_monitoring.py`: privacy/auth, bounded aggregate
+storage, error handling and reference-gated drift tests run without ML packages.
+The optional FastAPI ASGI binding test skips if FastAPI is absent. No live webcam,
+production drift baseline, external monitoring server or AWS access is needed.
+See [MONITORING.md](MONITORING.md) for operational prerequisites and limitations.
+
 `smoke_browser_camera.py` does not match `test_*.py` and is deliberately excluded.
 Compilation checks syntax without importing or executing the training modules,
 and excludes runtime data and MLflow stores (whose tag filenames may end in `.py`
