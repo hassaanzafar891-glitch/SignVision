@@ -5,6 +5,7 @@ All writes are new files under isolated training outputs, not the serving path.
 """
 
 import argparse
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 import shutil
@@ -77,9 +78,8 @@ def archive_current(source, destination, reviewer, evidence):
     return canonical_sha256(version)
 
 
-def review_candidate(source, expected_sha256, destination, reviewer, evidence, database):
-    """Explicit human attestation creates a NEW reviewed bundle, never edits capture."""
-    reviewer_fields(reviewer, evidence)
+def verify_candidate(source, expected_sha256, database):
+    """Read-only verification of completed capture; not evidence review or approval."""
     source = Path(source).resolve()
     version = verify_version(source, expected_sha256)
     receipt = read_json(source.parent / "complete.json")
@@ -112,10 +112,19 @@ def review_candidate(source, expected_sha256, destination, reviewer, evidence, d
             require(record["artifacts"][key] == sha256(source / f"{task}_{suffix}"), "Captured artifact mismatch")
         rows, database_hash = read_rows(database, task)
         verify_partitions(record, rows, database_hash)
-        record["provenance"].update(status="reviewed_training_time_evidence", reviewed_by=reviewer,
-                                     evidence_reference=evidence,
-                                     reviewed_at=datetime.now(timezone.utc).isoformat())
         records[task] = record
+    return version, records
+
+
+def review_candidate(source, expected_sha256, destination, reviewer, evidence, database):
+    """Explicit human attestation creates a NEW reviewed bundle, never edits capture."""
+    reviewer_fields(reviewer, evidence)
+    source = Path(source).resolve()
+    version, records = verify_candidate(source, expected_sha256, database)
+    for record in records.values():
+        record["provenance"].update(status="reviewed_training_time_evidence", reviewed_by=reviewer,
+                                    evidence_reference=evidence,
+                                    reviewed_at=datetime.now(timezone.utc).isoformat())
     destination = isolated(destination)
     destination.mkdir(parents=True, exist_ok=False)
     for name in version["files"]:
@@ -152,6 +161,11 @@ def verify_gate(evaluation_dir, current, target):
                 len(ids) for ids in manifest["partitions"].values())}, "Gate dataset identity mismatch")
             require(record["held_out"]["test_indices_sha256"] == canonical_sha256(manifest["partitions"]["test"]),
                     "Gate held-out identity mismatch")
+            require(record["held_out"]["partition_counts"] == {
+                name: len(indices) for name, indices in manifest["partitions"].items()},
+                "Gate partition counts differ from training evidence")
+            require(record["held_out"]["sample_count"] == len(manifest["partitions"]["test"]),
+                    "Gate sample count differs from training evidence")
         computed[task] = compare_evaluations(production, candidate)
     require(approval.get("tasks") == computed, "Combined approval content differs from recomputed gates")
     return canonical_sha256(approval)
@@ -203,6 +217,10 @@ def plan_change(*, action, current, current_sha256, target, target_sha256,
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+    verify = sub.add_parser("verify", help="Read-only candidate capture verification; no approval")
+    verify.add_argument("--source", required=True, type=Path)
+    verify.add_argument("--source-sha256", required=True)
+    verify.add_argument("--dataset", type=Path, default=BACKEND / "data/db/main_dataset.db")
     review = sub.add_parser("review")
     review.add_argument("--source", required=True, type=Path)
     review.add_argument("--source-sha256", required=True)
@@ -229,7 +247,11 @@ def main():
         cmd.add_argument("--evidence", required=True, help="Trusted immutable review/workflow reference; never a credential")
     args = vars(parser.parse_args())
     command = args.pop("command")
-    if command == "archive-current":
+    if command == "verify":
+        version, _ = verify_candidate(args["source"], args["source_sha256"], args["dataset"])
+        print(json.dumps({"capture_verified": True, "version": version["version"],
+                          "promotion_approved": False, "deployment_performed": False}))
+    elif command == "archive-current":
         print(archive_current(**args))
     elif command == "review":
         require(args.pop("attest_training_evidence"), "Review requires explicit --attest-training-evidence")

@@ -8,6 +8,8 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 import builtins
+import io
+from contextlib import redirect_stdout
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -166,6 +168,36 @@ class ControlledRetrainingTests(unittest.TestCase):
                 pass
         client.end_run.assert_called_once_with(status="FAILED")
         self.assertEqual(run.metadata["training_status"], "FAILED")
+
+    def test_candidate_verification_is_read_only_and_does_not_approve(self):
+        source, identity, _ = self.make_bundle("verify-only", reviewed=False)
+        before = {str(p): p.read_bytes() for p in source.parent.rglob("*") if p.is_file()}
+        output = io.StringIO()
+        with patch.object(versioning, "read_rows", return_value=(self.rows, "a" * 64)), \
+             patch.object(sys, "argv", ["versioning", "verify", "--source", str(source),
+                                       "--source-sha256", identity, "--dataset", "unused"]), \
+             redirect_stdout(output):
+            versioning.main()
+        report = json.loads(output.getvalue())
+        self.assertTrue(report["capture_verified"])
+        self.assertFalse(report["promotion_approved"])
+        self.assertFalse(report["deployment_performed"])
+        self.assertEqual(before, {str(p): p.read_bytes() for p in source.parent.rglob("*") if p.is_file()})
+        self.assertEqual(gate.read_json(source / "alphabet_provenance.json")["provenance"]["status"],
+                         "captured_training_time_unreviewed")
+        with self.assertRaises(gate.GateError):
+            versioning.verify_candidate(source, "0" * 64, "unused")
+
+    def test_gate_rejects_partition_counts_not_bound_to_manifest(self):
+        current, _, _ = self.make_bundle("partition-current")
+        target, _, _ = self.make_bundle("partition-target")
+        evaluation = self.evaluations(current, target)
+        record_path = evaluation / "alphabet_candidate.json"
+        record = gate.read_json(record_path)
+        record["held_out"]["partition_counts"].update(train=1, validation=3)
+        record_path.write_text(json.dumps(record))
+        with self.assertRaisesRegex(gate.GateError, "partition counts"):
+            versioning.verify_gate(evaluation, current, target)
 
     def test_review_creates_separate_bundle_leaving_capture_unmodified(self):
         source, identity, records = self.make_bundle("unreviewed", reviewed=False)

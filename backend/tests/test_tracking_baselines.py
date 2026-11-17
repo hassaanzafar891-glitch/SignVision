@@ -4,8 +4,10 @@ from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -133,36 +135,38 @@ class BaselineTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec("mlflow"), "MLflow is not installed")
     def test_real_local_mlflow_round_trip(self):
-        import mlflow
-        from mlflow.tracking import MlflowClient
-
-        previous_uri = mlflow.get_tracking_uri()
-        self.addCleanup(mlflow.set_tracking_uri, previous_uri)
-        # Newer local MLflow installs require explicit opt-in for file stores.
-        # This affects only this temporary fixture, never production storage.
-        environment = patch.dict("os.environ", {"MLFLOW_ALLOW_FILE_STORE": "true"})
-        environment.start()
-        self.addCleanup(environment.stop)
-        runs = importer.import_baselines(mlflow, self.backend, {})
-        client = MlflowClient(tracking_uri=importer.tracking_uri(self.backend, {}))
-        for name, run_id in runs.items():
-            run = client.get_run(run_id)
-            self.assertEqual(run.info.status, "FINISHED")
-            self.assertEqual(run.data.metrics, {})
-            self.assertEqual(run.data.tags["model.kind"], name)
-            artifacts = client.list_artifacts(run_id, "baseline")
-            self.assertEqual(len(artifacts), 5)
-            destination = self.backend / f"download-{name}"
-            destination.mkdir()
-            manifest_path = client.download_artifacts(
-                run_id, "baseline/manifest.json", str(destination)
-            )
-            manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-            model = next(a for a in manifest["artifacts"] if a["artifact"].endswith(".h5"))
-            model_path = client.download_artifacts(
-                run_id, f"baseline/{model['artifact']}", str(destination)
-            )
-            self.assertEqual(importer.sha256(model_path), model["sha256"])
+        # Select temporary stores AND working directory before importing MLflow.
+        # SDK import/cleanup hooks in newer installs may initialize default stores.
+        # A child process prevents those hooks leaking into the suite/repository.
+        code = '''
+import sys, json
+from pathlib import Path
+import mlflow
+from mlflow.tracking import MlflowClient
+from tracking import import_baselines as importer
+backend = Path(sys.argv[1])
+runs = importer.import_baselines(mlflow, backend, {})
+client = MlflowClient(tracking_uri=importer.tracking_uri(backend, {}))
+for name, run_id in runs.items():
+    run = client.get_run(run_id)
+    assert run.info.status == "FINISHED"
+    assert run.data.metrics == {}
+    assert run.data.tags["model.kind"] == name
+    assert len(client.list_artifacts(run_id, "baseline")) == 5
+    destination = backend / f"download-{name}"
+    destination.mkdir()
+    manifest_path = client.download_artifacts(run_id, "baseline/manifest.json", str(destination))
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    model = next(a for a in manifest["artifacts"] if a["artifact"].endswith(".h5"))
+    model_path = client.download_artifacts(run_id, f"baseline/{model['artifact']}", str(destination))
+    assert importer.sha256(model_path) == model["sha256"]
+'''
+        uri = importer.tracking_uri(self.backend, {})
+        environment = {**os.environ, "MLFLOW_TRACKING_URI": uri, "MLFLOW_REGISTRY_URI": uri,
+                       "MLFLOW_ALLOW_FILE_STORE": "true", "PYTHONPATH": str(importer.BACKEND)}
+        result = subprocess.run([sys.executable, "-B", "-c", code, str(self.backend)],
+                                cwd=self.backend, env=environment, capture_output=True, timeout=60)
+        self.assertEqual(result.returncode, 0, "Isolated temporary MLflow round trip failed")
 
 
 if __name__ == "__main__":

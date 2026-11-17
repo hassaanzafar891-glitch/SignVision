@@ -108,6 +108,21 @@ class MonitoringTests(unittest.TestCase):
             self.assertEqual(result["status"], "baseline_unavailable")
             self.assertIsNone(result["score"])
 
+    def test_deeply_nested_reference_does_not_disable_request_monitoring(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "nested.json"
+            depth = sys.getrecursionlimit() + 100
+            path.write_text("[" * depth + "0" + "]" * depth, encoding="utf-8")
+            monitor = self.make_monitor(baseline_path=path)
+        self.assertTrue(monitor.enabled)
+        monitor.record_request("match", 200, 0.1)
+        snapshot = monitor.snapshot()
+        self.assertEqual(snapshot["api"]["match"]["completed_requests"], 1)
+        drift = snapshot["tasks"]["alphabet"]["drift"]
+        self.assertEqual(drift["status"], "baseline_unavailable")
+        self.assertEqual(drift["reason"], "invalid_or_unreadable_reference")
+        self.assertIsNone(drift["score"])
+
     def test_minimum_reference_and_current_samples(self):
         low_reference = self.with_reference(reference(3, 3))
         self.fill(low_reference, ["a"] * 20)

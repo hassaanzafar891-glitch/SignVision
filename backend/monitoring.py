@@ -205,7 +205,7 @@ class Monitor:
                 if sum(counts.values()) != reference["sample_count"]:
                     raise ValueError("Reference counts do not sum to sample count")
             self._reference, self._reference_reason = tasks, None
-        except (OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError):
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError, RecursionError):
             self._reference, self._reference_reason = {}, "invalid_or_unreadable_reference"
 
     def record_request(self, route, status, seconds):

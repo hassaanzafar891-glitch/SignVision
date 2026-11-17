@@ -129,8 +129,9 @@ human trust boundary; schema checks cannot establish that claimed traffic really
 occurred. Keep reference preparation separate from monitoring ordinary users.
 
 Missing, unreadable, malformed, unreviewed, model-mismatched or bin-mismatched
-references produce `baseline_unavailable` with a bounded reason code. Too few
-reference/current samples produce the corresponding `insufficient_*_samples`
+references produce `baseline_unavailable` with a bounded reason code. Deeply nested
+malformed reference JSON is rejected without disabling request and prediction
+counters. Too few reference/current samples produce the corresponding `insufficient_*_samples`
 status. All these states have `score: null`, never `0` or `no_alert`.
 
 An alert is **not** proof of concept drift or degraded accuracy. Usage patterns,

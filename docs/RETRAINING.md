@@ -125,6 +125,18 @@ Keep trusted backups/access controls; local files can still be tampered with.
 
 ## Review and existing evaluation gate
 
+Before attesting to evidence, verify a completed candidate without writing any
+files or changing provenance status:
+
+```powershell
+& $Python -m tracking.versioning verify --source "backend/data/training_runs/candidates/<completed-id>/bundle" --source-sha256 "<independently-pinned-canonical-version-hash>"
+```
+
+This checks the completion receipt, versioned files, captured plan, exact dataset
+and duplicate-disjoint partitions. It does not load models, run inference, contact
+MLflow, train, approve a model or certify the truth of a review reference. The
+existing `review` command reuses these checks before creating a reviewed copy.
+
 The following are templates for **future** legitimate evidence. Replace the
 paths, reviewer and evidence identifiers with independently verified values.
 Hash values must come from trusted review records, not arbitrary downloaded JSON.
@@ -173,7 +185,7 @@ $Promotion = Join-Path $Lifecycle "promotion-plan.json"
 ```
 
 This recomputes both gates and verifies that their artifact/dataset/holdout hashes
-bind the exact versions. It records the previous version, target, gate hash and
+and every partition/sample count bind the exact versions. It records the previous version, target, gate hash and
 review reference, with `execution_performed: false`. Retain its printed canonical
 hash as `$PromotionHash`. No command copies files into `backend/data/models/`.
 
