@@ -4,6 +4,12 @@ Use PowerShell. Training, MLflow and application inference are separate processe
 This guide covers the MLOps workflow; source attribution and licensing are in
 [README.md](README.md#project-attribution-and-license).
 
+The browser sign page also shows **Model confidence (uncalibrated)** when the
+existing alphabet/word model returns a valid class probability. See
+[confidence behavior and tests](docs/PREDICTION_CONFIDENCE.md); this is not measured
+accuracy or calibrated probability of correctness. No-hand/error responses show
+Unavailable.
+
 For controlled future neural retraining, frozen provenance, candidate versions
 and manual promotion/rollback plans, use [RETRAINING.md](docs/RETRAINING.md).
 That procedure is explicitly triggered; it does not replace production artifacts.

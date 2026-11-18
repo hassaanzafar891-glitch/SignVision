@@ -1,0 +1,160 @@
+name: Trusted dataset validation
+
+"on":
+  workflow_run:
+    workflows: ["SignVision CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  checks: read
+
+concurrency:
+  group: trusted-dataset-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: backend
+  PYTHONUTF8: "1"
+  SIGNVISION_TRACKING_ENABLED: "false"
+  DATASET_CHECK_APP_ID: ${{ vars.SIGNVISION_DATASET_APP_ID }}
+
+jobs:
+  preflight:
+    name: Verify trusted origin and validation inputs
+    if: github.event.workflow_run.event == 'pull_request' && github.repository == 'hassaanzafar891-glitch/SignVision'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      context: ${{ steps.verify.outputs.context }}
+      allowed: ${{ steps.verify.outputs.allowed }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: hassaanzafar891-glitch/SignVision
+          ref: ${{ github.sha }} # workflow_run default-branch SHA, NEVER workflow_run.head_sha
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.10"
+      - id: verify
+        run: python -S -B -m tracking.trusted_dataset_ci preflight
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  start_check:
+    name: Open exact-head dataset check
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: dataset-check-publisher
+    outputs:
+      check_id: ${{ steps.start.outputs.check_id }}
+    env:
+      VALIDATION_CONTEXT: ${{ needs.preflight.outputs.context }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: hassaanzafar891-glitch/SignVision
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.10"
+      - name: Recheck before accessing publisher private key
+        run: python -S -B -m tracking.trusted_dataset_ci recheck
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: publisher
+        with:
+          client-id: ${{ vars.SIGNVISION_DATASET_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SIGNVISION_DATASET_APP_PRIVATE_KEY }}
+          owner: hassaanzafar891-glitch
+          repositories: SignVision
+          permission-checks: write
+      - id: start
+        run: python -S -B -m tracking.trusted_dataset_ci start
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLISHER_TOKEN: ${{ steps.publisher.outputs.token }}
+
+  validate:
+    name: Validate actual private DVC dataset with trusted code
+    needs: [preflight, start_check]
+    if: needs.preflight.outputs.allowed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: dataset-validation
+    outputs:
+      report: ${{ steps.validate.outputs.report }}
+    env:
+      VALIDATION_CONTEXT: ${{ needs.preflight.outputs.context }}
+      DATASET_CHECK_ID: ${{ needs.start_check.outputs.check_id }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: hassaanzafar891-glitch/SignVision
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.10"
+      - name: Recheck all identities before reader credential release
+        run: python -S -B -m tracking.trusted_dataset_ci recheck
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - id: validate
+        run: python -S -B -m tracking.trusted_dataset_ci validate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DAGSHUB_DATASET_READER_USERNAME: ${{ secrets.DAGSHUB_DATASET_READER_USERNAME }}
+          DAGSHUB_DATASET_READER_TOKEN: ${{ secrets.DAGSHUB_DATASET_READER_TOKEN }}
+
+  finish_check:
+    name: Publish exact-head validation conclusion
+    needs: [preflight, start_check, validate]
+    if: always() && needs.preflight.result == 'success' && needs.start_check.outputs.check_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: dataset-check-publisher
+    env:
+      VALIDATION_CONTEXT: ${{ needs.preflight.outputs.context }}
+      DATASET_CHECK_ID: ${{ needs.start_check.outputs.check_id }}
+      VALIDATION_JOB_RESULT: ${{ needs.validate.result }}
+      VALIDATION_REPORT: ${{ needs.validate.outputs.report }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: hassaanzafar891-glitch/SignVision
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.10"
+      - name: Reject stale metadata before publisher private key release
+        run: python -S -B -m tracking.trusted_dataset_ci recheck
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: publisher
+        with:
+          client-id: ${{ vars.SIGNVISION_DATASET_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SIGNVISION_DATASET_APP_PRIVATE_KEY }}
+          owner: hassaanzafar891-glitch
+          repositories: SignVision
+          permission-checks: write
+      - run: python -S -B -m tracking.trusted_dataset_ci finish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLISHER_TOKEN: ${{ steps.publisher.outputs.token }}

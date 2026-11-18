@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "scope": "synthetic-demo-only",
+  "runtime_directory": ".signvision-demo",
+  "seed": 42,
+  "feature_count": 42,
+  "rows_per_partition": 24,
+  "class_labels": ["demo_class_0", "demo_class_1"],
+  "tracking": "disabled",
+  "registry": "disabled"
+}

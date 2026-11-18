@@ -81,8 +81,8 @@ def predict_frame(frame: UploadFile = File(...), mode: int = 0):
         with tempfile.TemporaryDirectory(prefix="psl-frame-") as directory:
             path = Path(directory) / "keypoints.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
-            label = recognition_service.predict_file(str(path), mode)
-        return {"label": label, "mode": mode}
+            label, confidence = recognition_service.predict_file_with_confidence(str(path), mode)
+        return {"label": label, "mode": mode, "confidence": confidence}
 
     finally:
         _processing_lock.release()

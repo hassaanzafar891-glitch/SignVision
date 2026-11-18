@@ -66,3 +66,6 @@ backend/data/training_runs/
 .venv-backend/
 backend/mlartifacts/
 backend/mlflow.db
+
+# Synthetic local-only MLOps demonstration outputs (never production artifacts)
+.signvision-demo/

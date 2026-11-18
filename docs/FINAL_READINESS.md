@@ -13,6 +13,44 @@ Production promotion remains **BLOCKED**. No drift reference has been invented.
 The independently collected external-set strategy in [PHASE4_READINESS.md](PHASE4_READINESS.md)
 is a future proposal requiring policy approval, not work performed for this demo.
 
+## Automatic PR checks prepared locally — 19 November 2026
+
+The existing backend/frontend jobs and protected manual production approval are
+preserved. Automatic checks now add **trusted private DVC dataset validation** and a
+**sandbox-scoped fitted-model gate plus production artifact-change guard**. See
+[CI.md](CI.md) for exact checks, commands and required GitHub status contexts.
+
+Local real-dataset validation passed: reviewed MD5/SHA-256/size, SQLite integrity,
+both schemas, 15,363 alphabet rows and 543 word rows. Anonymous DagsHub object
+probes returned 401. The replacement trusted `workflow_run` design keeps the
+dataset/credentials away from PR code and uses only protected-main validation code.
+It verifies the current PR head and approved inputs before dedicated reader use,
+then publishes an exact-head check through a separate GitHub App issuer. No public
+dataset or fixture substitute is introduced. **Hosted operation remains unverified**:
+the reader account/token, App and main-only environments must be provisioned and
+tested by the owner. See [TRUSTED_DATASET_VALIDATION.md](TRUSTED_DATASET_VALIDATION.md).
+
+The automatic model check reproduces genuine fitted synthetic evaluation in a
+temporary directory. Normal comparison PASS (both accuracies/F1 1.0), stricter
+control BLOCK, actual weaker fitted challenger BLOCK (accuracy 0.5 versus 1.0),
+invalid evidence rejection and production-artifact-change rejection were verified
+locally. **These are not production performance results.** Changes under
+`backend/data/models` are blocked while authentic production holdout provenance
+is missing. Real production approval remains manual, evidence-backed and blocked.
+
+The new workflow has not been committed, pushed or run on GitHub in this session.
+An owner must configure the dedicated reader/App environments, publish/review the changes when authorized,
+require the four documented checks (with the expected dataset App issuer) in a branch ruleset, and retain a successful
+hosted PR run. Basic CI success does not remove these remaining blockers.
+The earlier sklearn-enabled suite passed 216 backend tests with two skips. The
+trusted two-stage follow-up passed 17 focused security tests and all 14 PR-check
+tests; full dependency-free discovery passed 188 with 47 optional skips (235 total).
+The earlier PR-stage SHA-256 comparison matched 330 protected files; this follow-up
+also verified that all six production model/preprocessing artifacts match Git HEAD
+and the actual dataset SHA-256 matches its approved pin. No production model,
+dataset, experiment or deployment was changed. Credentialed download and exact-head
+App publication still require the owner's hosted integration test.
+
 The implemented source revision is
 `0529f483871746d5929aed6983bcc579922e0921` on `feature/mlops-phase2`.
 This final documentation revision adds the historical-provenance findings and
@@ -38,6 +76,33 @@ or independent AWS recheck was supplied with this documentation update. The
 confirmed functionality is not a reason to rerun training or redeploy.
 
 ## Evidence inventory and claim boundaries
+
+A separate [synthetic sandbox and drift demo](DEMO_SANDBOX.md) is available locally
+for incremental instructor demonstrations. Its hand-authored JSON fixtures and
+initial pointer and synthetic replay alerts are not the real candidate, production
+models, measured production drift or independent evaluation evidence. An explicitly
+armed local consumer now also performs genuine scikit-learn decision-tree fitting
+on 24 frozen synthetic training rows, with measured results on 24 validation rows
+(accuracy and macro F1 both 1.0 in the recorded run). The earlier simulation remains
+separately labeled. Step 4 also fits a separate depth-1 evaluation champion using
+training rows only, and evaluates both genuine models on the same frozen 24-row
+synthetic test partition. Measured test accuracy and macro F1 are both 1.0 for both
+models, with confusion matrices `[[12, 0], [0, 12]]`. The shared no-regression rule
+returns PASS; a declared stricter +0.05 improvement control returns BLOCK on the
+measured tie. Results, training receipts, hashes and a separate initial evaluation
+champion pointer stay under the ignored sandbox. No real PSL training, production
+test validation, registry entry or promotion occurred. These synthetic results do
+not change the production readiness conclusions above. Step 5 adds explicit local
+sandbox promotion/rollback through a separate activation pointer, recorded PASS
+receipt verification, atomic replacement, load/inference health checks and fallback
+to the preserved fitted baseline. It cannot affect the live application or registry.
+The recorded local demonstration rejected the stricter BLOCK receipt, promoted
+`job-002` using the normal PASS receipt, and successfully rolled back. Both actual
+post-switch load/inference health checks passed on a training sample. Final sandbox
+state is the healthy baseline with no pending transaction; earlier pointers,
+models and evidence are unchanged.
+Original production holdout provenance remains UNAVAILABLE and production promotion
+BLOCKED; sandbox activation is not production model approval or deployment.
 
 "Verified" below describes the named local/recorded check, not an AWS check.
 "Operator-verified" attributes a reported successful check to the project operator,
@@ -70,8 +135,10 @@ Recorded checks already satisfied:
 
 - [x] Source attribution and MIT license retained; processed data is DVC-tracked,
   while original raw images/videos are private and unavailable.
-- [x] Last recorded full backend suite: **101 passed**. Dependency-free run:
-  **95 passed, 6 optional tests skipped**. Tests use fixtures, not real training.
+- [x] Latest local backend suite (19 November): **216 passed, two skipped**;
+  dependency-free: **172 passed, 46 optional skips** (218 total in each run).
+  Fixtures are isolated; sklearn-enabled sandbox tests genuinely fit synthetic
+  models. No production neural training is executed by these checks.
 - [x] Published implementation commit has successful backend and frontend CI.
 - [x] Operator confirms DVC cache/remote synchronization succeeded.
 - [x] Operator confirms the live AWS application and monitoring work; this is
@@ -83,7 +150,8 @@ Recorded checks already satisfied:
 - [x] Both production provenance preflights stop on missing original manifests;
   November 15 scores/registry entries are distinguished from production artifacts.
 - [x] Missing/malformed drift baselines do not produce a fabricated score.
-- [x] No automatic retraining, model promotion or deployment is claimed.
+- [x] No automatic production retraining, promotion or deployment is claimed.
+  The isolated synthetic workflow is separately labeled and verified.
 
 Remaining presentation/review checks (not requests to repeat successful checks):
 

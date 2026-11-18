@@ -1,0 +1,5 @@
+# CPU-only PR sandbox tests and YAML checks. Never install the inference/MLflow stack.
+numpy==1.26.4
+scipy==1.11.4
+scikit-learn==1.6.1
+PyYAML==6.0.3
