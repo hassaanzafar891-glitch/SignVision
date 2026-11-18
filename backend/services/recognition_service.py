@@ -7,6 +7,7 @@ import PSL.alphabet_recognition.alphabet_recognition as alphabet
 import PSL.word_recognition.word_recognition as word
 import PSL.helper.helperFunc as helper
 from monitoring import note_prediction_error, observe_prediction, register_loaded_model
+from services.prediction_confidence import capture_confidence
 
 
 for _task, _module in (("alphabet", alphabet), ("word", word)):
@@ -63,3 +64,11 @@ def predict_file(filepath: str, mode: int) -> str:
         # Do not log per-frame labels, keypoint paths or exception payloads.
         note_prediction_error()
         return "no match"
+
+
+def predict_file_with_confidence(filepath: str, mode: int):
+    """Add optional classification confidence while retaining legacy string APIs."""
+    with capture_confidence() as observation:
+        label = predict_file(filepath, mode)
+        confidence = observation["confidence"] if label not in ("no match", "no confidence") else None
+        return label, confidence

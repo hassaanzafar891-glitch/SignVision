@@ -121,6 +121,15 @@ def validate_record(record, role):
     return record
 
 
+def require_no_accuracy_regression(reference_accuracy, candidate_accuracy):
+    """Shared numerical rule only; callers must separately verify evaluation evidence."""
+    for value in (reference_accuracy, candidate_accuracy):
+        require(type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 1,
+                "Invalid test_accuracy")
+    require(candidate_accuracy >= reference_accuracy, "Candidate accuracy regression")
+    return candidate_accuracy - reference_accuracy
+
+
 def compare_evaluations(production, candidate):
     production = validate_record(production, "production")
     candidate = validate_record(candidate, "candidate")
@@ -130,7 +139,7 @@ def compare_evaluations(production, candidate):
     for key in ("test_indices_sha256", "test_rows_sha256", "sample_count"):
         require(production["held_out"][key] == candidate["held_out"][key], "Held-out split identity mismatch")
     accuracy = candidate["metrics"]["test_accuracy"]
-    require(accuracy >= production["metrics"]["test_accuracy"], "Candidate accuracy regression")
+    delta = require_no_accuracy_regression(production["metrics"]["test_accuracy"], accuracy)
     return {
         "approved": True, "task": candidate["task"], "policy": "no_accuracy_regression_v1",
         "production_record_sha256": canonical_sha256(production),
@@ -139,7 +148,7 @@ def compare_evaluations(production, candidate):
         "candidate_artifacts": candidate["model"]["artifacts"],
         "dataset_sha256": candidate["dataset"]["sha256"],
         "test_indices_sha256": candidate["held_out"]["test_indices_sha256"],
-        "test_accuracy_delta": accuracy - production["metrics"]["test_accuracy"],
+        "test_accuracy_delta": delta,
         "production_metrics": production["metrics"], "candidate_metrics": candidate["metrics"],
         "deployment_performed": False,
     }

@@ -75,11 +75,11 @@ class BrowserFrameTests(unittest.TestCase):
             payload = json.loads(Path(path).read_text())
             self.assertEqual(payload["people"][0]["hand_right_keypoints_2d"],
                              self.helper._get_hand_keypoints.return_value)
-            return "alphabet" if mode == 0 else "word"
-        self.service.predict_file.side_effect = predict
+            return ("alphabet" if mode == 0 else "word"), (0.8 if mode == 0 else 0.9)
+        self.service.predict_file_with_confidence.side_effect = predict
         self.assertEqual(self.route.predict_frame(self.upload(), 0)["label"], "alphabet")
         self.helper._get_hand_keypoints.return_value = [2.0] * 63
-        self.assertEqual(self.route.predict_frame(self.upload(), 1)["label"], "word")
+        self.assertEqual(self.route.predict_frame(self.upload(), 1), {"label": "word", "mode": 1, "confidence": 0.9})
         self.assertNotEqual(paths[0], paths[1])
         self.assertTrue(all(not path.exists() for path in paths))
         self.service.predict.assert_not_called()
@@ -89,11 +89,16 @@ class BrowserFrameTests(unittest.TestCase):
         def fail(path, mode):
             paths.append(Path(path))
             raise RuntimeError("failed")
-        self.service.predict_file.side_effect = fail
+        self.service.predict_file_with_confidence.side_effect = fail
         with self.assertRaises(RuntimeError):
             self.route.predict_frame(self.upload(), 0)
         self.assertFalse(self.route._processing_lock.locked())
         self.assertFalse(paths[0].exists())
+
+    def test_unavailable_confidence_is_null_without_changing_labels(self):
+        for label in ("no confidence", "no match", "alphabet"):
+            self.service.predict_file_with_confidence.return_value = (label, None)
+            self.assertEqual(self.route.predict_frame(self.upload()), {"label": label, "mode": 0, "confidence": None})
 
 
 if __name__ == "__main__":

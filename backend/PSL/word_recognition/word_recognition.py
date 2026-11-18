@@ -9,6 +9,7 @@ import numpy as np
 
 from tensorflow.keras.models import load_model
 from monitoring import note_model_confidence
+from services.prediction_confidence import record_model_probability
 
 
 model  = load_model("data/models/word_model.h5")
@@ -40,6 +41,7 @@ def match_ann(fileName):
         y_pred = model.predict(scaler.transform(np.array([handRightResults])), verbose=0)
         note_model_confidence(y_pred)
         C = np.argmax(y_pred)
+        record_model_probability(y_pred, int(C), len(le.classes_))
         return le.inverse_transform([C])[0]
     else:
         return "no confidence"

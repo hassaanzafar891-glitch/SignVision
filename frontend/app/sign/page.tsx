@@ -7,6 +7,8 @@ import { Logo, LsThemeToggle } from "../components/ls/Components";
 import * as I from "../components/ls/Icons";
 import { saveDetection } from "../lib/history";
 import { API_BASE } from "../lib/api";
+import ModelConfidence from "./ModelConfidence";
+import { readFramePrediction } from "./prediction-confidence";
 
 const API = `${API_BASE}/api`;
 
@@ -29,6 +31,7 @@ export default function SignPage() {
   const [detecting, setDetecting] = useState(false);
   const cooldown = 1000;
   const [currentLetter, setCurrentLetter] = useState("");
+  const [modelConfidence, setModelConfidence] = useState<number | null>(null);
   const [currentWord, setCurrentWord] = useState("");
   const [sentence, setSentence] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
@@ -49,6 +52,7 @@ export default function SignPage() {
     modeVersionRef.current += 1;
     modeRef.current = !modeRef.current;
     setWordMode(modeRef.current);
+    setModelConfidence(null);
     setCurrentLetter("");
     lastLetterRef.current = "";
   }
@@ -64,6 +68,7 @@ export default function SignPage() {
     startingRef.current = true;
     setStarting(true);
     setCameraError("");
+    setModelConfidence(null);
     const session = ++sessionRef.current;
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -119,7 +124,10 @@ export default function SignPage() {
       const mode = modeRef.current;
       const modeVersion = modeVersionRef.current;
       try {
-        if (!video || video.readyState < 2) return;
+        if (!video || video.readyState < 2) {
+          setModelConfidence(null);
+          return;
+        }
         const scale = Math.min(1, 640 / video.videoWidth, 480 / video.videoHeight);
         canvas.width = Math.round(video.videoWidth * scale);
         canvas.height = Math.round(video.videoHeight * scale);
@@ -132,12 +140,17 @@ export default function SignPage() {
         const res = await fetch(`${API}/predict-frame?mode=${mode ? 1 : 0}`, {
           method: "POST", body, signal: controller.signal,
         });
-        if (res.status === 429) return;
+        if (res.status === 429) {
+          if (!cancelled && session === sessionRef.current && modeVersion === modeVersionRef.current) setModelConfidence(null);
+          return;
+        }
         if (!res.ok) throw new Error(`Frame recognition failed (${res.status})`);
-        const data = await res.json();
+        const response = await res.json();
         if (cancelled || session !== sessionRef.current || modeVersion !== modeVersionRef.current) return;
-        if (typeof data.label !== "string") throw new Error("Invalid prediction response");
+        const data = readFramePrediction(response);
         setCameraError("");
+        // Refresh the score on every frame, including repeated labels; speech remains deduplicated.
+        setModelConfidence(data.confidence);
         if (["no match", "no confidence"].includes(data.label)) {
           setCurrentLetter("");
           lastLetterRef.current = "";
@@ -148,7 +161,8 @@ export default function SignPage() {
           if (speechRef.current) void speakWord(data.label);
         }
       } catch (error) {
-        if (!cancelled) {
+        if (!cancelled && session === sessionRef.current && modeVersion === modeVersionRef.current) {
+          setModelConfidence(null);
           setCurrentLetter("");
           lastLetterRef.current = "";
           setCameraError(error instanceof Error ? error.message : "Frame recognition unavailable.");
@@ -168,6 +182,7 @@ export default function SignPage() {
 
   function acceptLetter() {
     if (!currentLetter) return;
+    setModelConfidence(null);
     setCurrentWord(prev => prev + currentLetter);
     setCurrentLetter("");
     lastLetterRef.current = "";
@@ -198,6 +213,7 @@ export default function SignPage() {
 
   function addWord() {
     if (!currentWord) return;
+    setModelConfidence(null);
     saveDetection(currentWord, 'Word');
     setSentence(prev => {
       const next = [...prev, currentWord];
@@ -235,6 +251,7 @@ export default function SignPage() {
     if (videoRef.current) videoRef.current.srcObject = null;
     audioRef.current?.pause();
     setDetecting(false);
+    setModelConfidence(null);
     setCurrentLetter("");
     lastLetterRef.current = "";
   }
@@ -370,6 +387,7 @@ export default function SignPage() {
 
           {/* Feed box */}
           <div className="psl-sign-cambox" style={{ width: '100%', maxWidth: 720, aspectRatio: '4/3', borderRadius: 20, border: '1px solid var(--line)', background: 'var(--surface)', overflow: 'hidden', position: 'relative' }}>
+            <ModelConfidence value={modelConfidence} />
             <video ref={videoRef} autoPlay playsInline muted aria-label="Live webcam"
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: detecting ? 'block' : 'none', transform: 'scaleX(-1)' }} />
             {!detecting && (
